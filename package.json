@@ -1,9 +1,12 @@
 {
   "name": "save-small-tv",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A tiny Tic-80 game: Save Small TV.",
   "main": "index.js",
-  "keywords": ["Tic-80", "Game"],
+  "keywords": [
+    "Tic-80",
+    "Game"
+  ],
   "author": {
     "name": "LancerComet",
     "email": "chw644@hotmail.com"

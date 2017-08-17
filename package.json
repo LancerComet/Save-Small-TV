@@ -1,6 +1,6 @@
 {
   "name": "save-small-tv",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A tiny Tic-80 game: Save Small TV.",
   "main": "index.js",
   "keywords": [

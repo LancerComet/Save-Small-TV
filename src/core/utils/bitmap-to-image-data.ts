@@ -1,15 +1,15 @@
 import { hexToRgb } from './hex-to-rgb'
 
 /**
- * Create ImageData by using bitmap.
+ * Transform single bitmap data to an imageData object.
  *
  * @param {number} width
  * @param {number} height
- * @param {string[]} bitmap
- * @param {[key: string]: string} colorMap
+ * @param {TBitmap} bitmap
+ * @param {TColorMap} colorMap
  * @returns {ImageData}
  */
-function bitmapToImageData (width: number, height: number, bitmap: string[], colorMap: {[key: string]: string}): ImageData {
+function bitmapToImageData (width: number, height: number, bitmap: TBitmap, colorMap: TColorMap): ImageData {
   const arrayBuffer = new ArrayBuffer(width * height)
   const uint8Arr = new Uint8ClampedArray(arrayBuffer)
 

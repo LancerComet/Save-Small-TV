@@ -7,6 +7,9 @@
  * @class Sprite
  */
 class Sprite {
+  canvasWidth: number = 0
+  canvasHeight: number = 0
+
   /**
    * Width.
    *
@@ -75,7 +78,7 @@ class Sprite {
    * @type {number}
    * @memberof Sprite
    */
-  protected textureChangingCountdown: number = 60 * 2
+  protected textureChangingCountdown: number = 60 * 1
   private $textureChangingCountdown: number = 0
   private textChangingCountdownRafID: number = 0
 
@@ -102,11 +105,29 @@ class Sprite {
    *
    * @memberof Sprite
    */
-  destroy () {
+  $destroy () {
     cancelAnimationFrame(this.textChangingCountdownRafID)
   }
 
-  constructor () {
+  /**
+   * Ticking function.
+   *
+   * @memberof Sprite
+   */
+  $tick () {
+
+  }
+
+  /**
+   * Creates an instance of Sprite.
+   *
+   * @param {number} canvasWidth Logical width of canvas.
+   * @param {number} canvasHeight  Logical height of canvas.
+   * @memberof Sprite
+   */
+  constructor (canvasWidth: number, canvasHeight: number) {
+    this.canvasWidth = canvasWidth
+    this.canvasHeight = canvasHeight
     this.$textureChangingCountdown = this.textureChangingCountdown
     this.textChangingCountdownExec()
   }

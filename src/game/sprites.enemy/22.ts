@@ -11,7 +11,7 @@ const COLOR_MAP: TColorMap = {
   '2': '#ead299',
   '3': '#d6996d',
   '4': '#deeed6',
-  '5': '#4E4A4E',
+  '5': '#4e4a4e',
   '6': '#652434'
 }
 
@@ -59,8 +59,8 @@ class Sprite22 extends Sprite {
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
-  constructor () {
-    super()
+  constructor (canvasWidth: number, canvasHeight: number) {
+    super(canvasWidth, canvasHeight)
     this.x = 0
     this.y = 0
     this.hp = HP

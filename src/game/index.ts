@@ -6,20 +6,17 @@
 
 import { Stage } from '../core/stage'
 import { Sprite22 } from './sprites.enemy/22'
+import { Sprite33 } from './sprites.enemy/33'
+import { tick } from './tick'
 
 // Create new stage.
 const stage = new Stage(
   <HTMLCanvasElement> document.getElementById('app-canvas'),
   {
     enableSmooth: false,
-    scale: 20
+    scale: 3
   }
 )
 
-// Create sprites.
-const emery22 = new Sprite22()
-stage.addSprite(emery22)
-
-
-// Start game.
+stage.onTick(tick)
 stage.start()

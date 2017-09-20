@@ -10,12 +10,14 @@ import { Offscreen } from './offscreen'
 class Stage {
   // Canvas Elements.
   // ==================================
-  private canvasElement: HTMLCanvasElement
-  private context: CanvasRenderingContext2D
+  private $canvasElement: HTMLCanvasElement
+  private $context: CanvasRenderingContext2D
+  get canvasElement () { return this.$canvasElement }
+  get context () { return this.$context }
 
   // Offscreens.
   // ==================================
-  offscreens: {[name: string]: Offscreen} = {
+  private offscreens: {[name: string]: Offscreen} = {
     sprites: null
   }
 
@@ -26,8 +28,8 @@ class Stage {
    * @memberof Stage
    */
   private initOffscreens () {
-    const width = this.canvasElement.width
-    const height = this.canvasElement.height
+    const width = this.logicalSize[0]
+    const height = this.logicalSize[1]
     this.offscreens.sprites = new Offscreen(width, height)
   }
 
@@ -39,7 +41,24 @@ class Stage {
   }
   private set scale (newValue) {
     this._scale = newValue
-    this.context.scale(newValue, newValue)
+    this.$context.scale(newValue, newValue)
+  }
+
+  /**
+   * Get logical size of the stage.
+   * Logical size: Actual size / Scale rate.
+   *
+   * @readonly
+   * @type {[number, number]}
+   * @memberof Stage
+   */
+  get logicalSize (): [number, number] {
+    const canvas = this.canvasElement
+    const scale = this.scale
+    return [
+      canvas.width / scale,
+      canvas.height / scale
+    ]
   }
 
   /**
@@ -55,7 +74,7 @@ class Stage {
       'msImageSmoothingEnabled',
       'imageSmoothingEnabled'
     ].forEach(item => {
-      this.context[item] = false
+      this.$context[item] = false
     })
   }
 
@@ -79,7 +98,7 @@ class Stage {
     }
 
     // Draw offscreen into stage.
-    this.context.drawImage(offscreen.canvasElement, 0, 0)
+    this.$context.drawImage(offscreen.canvasElement, 0, 0)
   }
 
   /**
@@ -89,8 +108,8 @@ class Stage {
    * @memberof Stage
    */
   private clearStage () {
-    this.context.clearRect(
-      0, 0, this.canvasElement.width, this.canvasElement.height
+    this.$context.clearRect(
+      0, 0, this.$canvasElement.width, this.$canvasElement.height
     )
   }
 
@@ -184,12 +203,10 @@ class Stage {
 
   constructor (canvasElement: HTMLCanvasElement, option?: IStageOption) {
     // Canvas Element & Context.
-    this.canvasElement = canvasElement
-    this.context = canvasElement.getContext('2d')
+    this.$canvasElement = canvasElement
+    this.$context = canvasElement.getContext('2d')
 
-    // Initialize Offscreens.
-    this.initOffscreens()
-
+    // Set options.
     if (typeof option === 'object') {
       // Set smoothing.
       !option.enableSmooth && this.disableSmoothing()
@@ -199,6 +216,9 @@ class Stage {
         this.scale = option.scale
       }
     }
+
+    // Initialize Offscreens.
+    this.initOffscreens()
   }
 }
 
@@ -206,6 +226,11 @@ export {
   Stage
 }
 
+/**
+ * Interface for stage option.
+ *
+ * @interface IStageOption
+ */
 interface IStageOption {
   enableSmooth?: boolean
   scale?: number

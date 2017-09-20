@@ -17,7 +17,7 @@ module.exports = {
   },
 
   resolve: {
-    extensions: ['.js', '.vue', '.json'],
+    extensions: ['.js', '.ts', '.vue', '.json'],
 
     modules: [
       resolve('src'),
@@ -51,14 +51,10 @@ module.exports = {
         loader: 'jade-loader'
       },
       {
-        test: /\.styl$/,
-        loader: 'stylus-loader'
-      },
-      {
         test: /\.js$/,
         use: [
-          'cache-loader',
-          'thread-loader',
+          // 'cache-loader',
+          // 'thread-loader',
           'babel-loader'
         ],
         include: [resolve('src'), resolve('test')]
@@ -66,8 +62,8 @@ module.exports = {
       {
         test: /\.tsx?$/,
         use: [
-          'cache-loader',
-          'thread-loader',
+          // 'cache-loader',
+          // 'thread-loader',
           'babel-loader',
           {
             loader: 'ts-loader',

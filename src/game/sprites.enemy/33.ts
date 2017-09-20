@@ -46,7 +46,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0',
-  ],
+  ]
 ]
 
 class Sprite33 implements Sprite {
@@ -56,4 +56,8 @@ class Sprite33 implements Sprite {
   height = HEIGHT
   hp = HP
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+}
+
+export {
+  Sprite33
 }

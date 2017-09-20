@@ -1,7 +1,7 @@
 {
-  "name": "template.webpack",
-  "version": "1.1.0",
-  "description": "A webpack 3 startkit.",
+  "name": "bili-waiting-game",
+  "version": "0.1.0",
+  "description": "Waiting game for live error page.",
   "author": "LancerComet <chw644@hotmail.com>",
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --config ./build/webpack.dev.conf.js",

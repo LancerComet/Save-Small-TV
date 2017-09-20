@@ -87,7 +87,7 @@ class Sprite {
    */
   private textChangingCountdownExec () {
     if (this.$textureChangingCountdown <= 0) {
-      this.currentTexture > this.textures.length - 1
+      this.currentTexture = this.currentTexture >= this.textures.length - 1
         ? 0
         : this.currentTexture + 1
       this.$textureChangingCountdown = this.textureChangingCountdown

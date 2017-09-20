@@ -12,7 +12,7 @@ const stage = new Stage(
   <HTMLCanvasElement> document.getElementById('app-canvas'),
   {
     enableSmooth: false,
-    scale: 3
+    scale: 20
   }
 )
 

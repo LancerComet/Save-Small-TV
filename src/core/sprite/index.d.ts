@@ -17,3 +17,8 @@ type TColorMap = {[bitmap: string]: string}
  * Define type for texture.
  */
 type TTextures = Array<ImageData>
+
+/**
+ * Define type for direction.
+ */
+type TDirection = 'L' | 'R' | 'T' | 'B'

@@ -20,7 +20,6 @@ const MAX_ENEMYS = 10
 const GEN_ENEMY_INTERVAL = 2 * 60  // Frames.
 
 const bullets = []
-const enemys: Sprite[] = []
 
 let score = 0
 let level = 1
@@ -30,8 +29,6 @@ let $genSpecialItemsCountdown = 0
 
 let stageWidth: number = null
 let stageHeight: number = null
-
-let player1: SmallTV = null
 
 /**
  * Game ticking function.
@@ -75,10 +72,12 @@ class Init {
    * @static
    * @memberof Init
    */
-  static player () {
-    player1 = new SmallTV()
+  static player1 () {
+    const player1 = new SmallTV()
     player1.x = stageWidth / 2 - player1.width / 2
     player1.y = stageHeight / 2 - player1.height / 2
+
+    Player1.player1 = player1
   }
 
   /**
@@ -93,7 +92,7 @@ class Init {
     if (!stageWidth || !stageHeight) { Init.size(stage) }
 
     // Init player.
-    !player1 && Init.player()
+    !Player1.player1 && Init.player1()
   }
 }
 
@@ -103,6 +102,8 @@ class Init {
  * @class Enemy
  */
 class Enemy {
+  static enemys: Sprite[] = []
+
   /**
    * Generate enemys.
    *
@@ -111,6 +112,8 @@ class Enemy {
    * @memberof Enemy
    */
   static genEnemys (stage: Stage) {
+    const enemys = Enemy.enemys
+
     if (enemys.length >= level) { return }
 
     if ($genEnemyCountdown > 0) {
@@ -122,11 +125,10 @@ class Enemy {
 
     // Enemy count is based on current level.
     for (let i = 0; i < level; i++) {
-      const Enemy = sprites.getRandomEnemy()
-      const enemy = new Enemy()
+      const EnemyType = sprites.getRandomEnemy()
+      const enemy = new EnemyType()
 
       // TODO: Set enemy's position.
-
       enemys.push(enemy)
     }
   }
@@ -138,6 +140,8 @@ class Enemy {
    * @memberof Enemy
    */
   static tickEnemys (stage: Stage) {
+    const enemys = Enemy.enemys
+
     for (let i = 0, length = enemys.length; i < length; i++) {
       const enemy = enemys[i]
       Enemy.detectAttack(enemy)
@@ -232,6 +236,16 @@ class Enemy {
     Enemy.genEnemys(stage)
     Enemy.tickEnemys(stage)
   }
+
+  /**
+   * Data resetting function.
+   *
+   * @static
+   * @memberof Enemy
+   */
+  static $reset () {
+    Enemy.enemys = []
+  }
 }
 
 /**
@@ -240,7 +254,10 @@ class Enemy {
  * @class Player1
  */
 class Player1 {
+  static player1: SmallTV = null
+
   static keyControl (stage: Stage) {
+    const player1 = Player1.player1
     const keyPressed = stage.keyPressed
 
     if (keyPressed.L) {
@@ -261,13 +278,23 @@ class Player1 {
   }
 
   static move (stage: Stage) {
+    const player1 = Player1.player1
     if (player1.dirX === 'L') { player1.x -= player1.speed }
     if (player1.dirX === 'R') { player1.x += player1.speed }
     if (player1.dirY === 'T') { player1.y -= player1.speed }
     if (player1.dirY === 'B') { player1.y += player1.speed }
   }
 
+  static positionLimit () {
+    const player1 = Player1.player1
+    if (player1.x <= 0) { player1.x = 0 }
+    if (player1.x >= stageWidth - player1.width) { player1.x = stageWidth - player1.width }
+    if (player1.y <= 0) { player1.y = 0 }
+    if (player1.y >= stageHeight - player1.height) { player1.y = stageHeight - player1.height }
+  }
+
   static draw (stage: Stage) {
+    const player1 = Player1.player1
     stage.context.drawImage(
       player1.offscreen.canvasElement, player1.x, player1.y
     )
@@ -276,6 +303,7 @@ class Player1 {
   static $tick (stage: Stage) {
     Player1.keyControl(stage)
     Player1.move(stage)
+    Player1.positionLimit()
     Player1.draw(stage)
   }
 }

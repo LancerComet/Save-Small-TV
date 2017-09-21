@@ -7,8 +7,10 @@
  */
 
 import { Stage } from '../../core/stage'
+
 import { Sprite } from '../../core/sprite'
 import * as sprites from '../sprites/sprites.enemy'
+import { SmallTV } from '../sprites/sprites.player'
 
 import { floor, rand } from '../utils'
 
@@ -29,6 +31,8 @@ let $genSpecialItemsCountdown = 0
 let stageWidth: number = null
 let stageHeight: number = null
 
+let player: SmallTV = null
+
 /**
  * Game ticking function.
  * All logic will be executed in here.
@@ -36,16 +40,31 @@ let stageHeight: number = null
  * @param {Stage} stage
  */
 function tick (stage: Stage) {
+  // Init size.
   if (!stageWidth || !stageHeight) {
     const stageSize = stage.logicalSize
     stageWidth = stageSize[0]
     stageHeight = stageSize[1]
   }
 
+  // Init player.
+  if (!player) {
+    player = new SmallTV()
+    player.x = stageWidth / 2 - player.width / 2
+    player.y = stageHeight / 2 - player.height / 2
+  }
+
+  // Enemys.
   genEnemys(stage)
   genSpecialItems(stage)
   tickEnemys()
   drawEnemys(stage)
+
+  // Player.
+  tickPlayer(stage)
+  drawPlayer(stage)
+
+  // UI.
   printUI(stage)
 }
 
@@ -113,6 +132,15 @@ function drawEnemys (stage: Stage) {
  * @param {Sprite} enemy
  */
 function enemyDetectAttack (enemy: Sprite) {
+  const padding = enemy.padding
+  const startX = enemy.x - padding
+  const startY = enemy.y - padding
+  const sizeX = enemy.width
+  const sizeY = enemy.height
+  const endX = enemy.x - sizeX - padding
+  const endY = enemy.y - sizeY - padding
+
+  // TODO: line 435.
 }
 
 /**
@@ -170,4 +198,22 @@ function genSpecialItems (stage: Stage) {
 // ========================
 function printUI (stage: Stage) {
   stage.printText('Save small TV v0.3', 10, 10)
+}
+
+
+// Player.
+// ========================
+
+/**
+ * Player ticking.
+ */
+function tickPlayer (stage: Stage) {
+
+}
+
+/**
+ * Player drawing function.
+ */
+function drawPlayer (stage: Stage) {
+  stage.context.drawImage(player.offscreen.canvasElement, player.x, player.y)
 }

@@ -93,6 +93,14 @@ class Sprite {
   y: number = 0
 
   /**
+   * Visual padding distance.
+   *
+   * @type {number}
+   * @memberof Sprite
+   */
+  padding: number = 0
+
+  /**
    * Define which texture is going to be shown.
    *
    * @private
@@ -121,7 +129,7 @@ class Sprite {
    * @type {number}
    * @memberof Sprite
    */
-  protected TEXTURE_CHANGING_COUNTDOWN: number = 60 * 1
+  protected TEXTURE_CHANGING_COUNTDOWN: number | false = null
   private $textureChangingCountdown: number = 0
   private textChangingCountdownRafID: number = 0
 
@@ -136,7 +144,8 @@ class Sprite {
       this.currentTexture = this.currentTexture >= this.textures.length - 1
         ? 0
         : this.currentTexture + 1
-      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+
+      this.$textureChangingCountdown = <number> this.TEXTURE_CHANGING_COUNTDOWN
     } else {
       this.$textureChangingCountdown--
     }
@@ -189,8 +198,10 @@ class Sprite {
     this.offscreen = new Offscreen(this.width, this.height)
 
     // Start texture changing.
-    this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
-    this.textChangingCountdownExec()
+    if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
+      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+      this.textChangingCountdownExec()
+    }
   }
 }
 

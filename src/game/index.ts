@@ -5,7 +5,7 @@
  */
 
 import { Stage } from '../core/stage'
-import { tick } from './core/tick'
+import { tick } from './tick'
 
 // Create new stage.
 const stage = new Stage(

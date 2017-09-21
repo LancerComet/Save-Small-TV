@@ -68,8 +68,6 @@ class Sprite33 extends Sprite {
     this.speed = .5
     this.padding = 2
     this.TEXTURE_CHANGING_COUNTDOWN = 60 * 1
-
-    this.offscreenDrawingExec()
   }
 }
 

@@ -163,10 +163,10 @@ class Sprite {
   /**
    * Draw texture into offscreen.
    *
-   * @protected
+   * @private
    * @memberof Sprite
    */
-  protected offscreenDrawingExec () {
+  private offscreenDrawingExec () {
     const context = this.offscreen.context
     context.putImageData(
       this.textures[this.currentTexture],
@@ -197,11 +197,17 @@ class Sprite {
     // Init offscreen.
     this.offscreen = new Offscreen(this.width, this.height)
 
-    // Start texture changing.
-    if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
-      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
-      this.textChangingCountdownExec()
-    }
+    // Something will be execued at last.
+    setTimeout(() => {
+      // Start texture changing.
+      if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
+        this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+        this.textChangingCountdownExec()
+      }
+
+      // Start to draw textures into offscren.
+      this.offscreenDrawingExec()
+    }, 1)
   }
 }
 

@@ -5,9 +5,7 @@
  */
 
 import { Stage } from '../core/stage'
-import { Sprite22 } from './sprites.enemy/22'
-import { Sprite33 } from './sprites.enemy/33'
-import { tick } from './tick'
+import { tick } from './core/tick'
 
 // Create new stage.
 const stage = new Stage(

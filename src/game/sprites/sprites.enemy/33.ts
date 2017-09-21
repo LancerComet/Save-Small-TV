@@ -1,5 +1,5 @@
-import { Sprite } from '../../core/sprite'
-import { bitmapsToTextures } from '../../core/utils'
+import { Sprite } from '../../../core/sprite'
+import { bitmapsToTextures } from '../../../core/utils'
 
 const WIDTH = 16
 const HEIGHT = 16
@@ -60,13 +60,15 @@ class Sprite33 extends Sprite {
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
-  constructor (canvasWidth: number, canvasHeight: number) {
-    super(canvasWidth, canvasHeight)
+  constructor () {
+    super()
     this.x = 0
     this.y = 0
     this.hp = HP
-    this.textureChangingCountdown = 60 * 1
-    this.currentTexture = 0
+    this.speed = .5
+    this.TEXTURE_CHANGING_COUNTDOWN = 60 * 1
+
+    this.offscreenDrawingExec()
   }
 }
 

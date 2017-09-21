@@ -1,5 +1,7 @@
 /// <reference path="./index.d.ts" />
 
+import { Offscreen } from './offscreen'
+
 /**
  * Sprite Class Definition.
  * Stands for a single sprite.
@@ -7,9 +9,6 @@
  * @class Sprite
  */
 class Sprite {
-  canvasWidth: number = 0
-  canvasHeight: number = 0
-
   /**
    * Width.
    *
@@ -33,6 +32,41 @@ class Sprite {
    * @memberof Sprite
    */
   hp: number = 0
+
+  /**
+   * Wether this sprite is dead.
+   *
+   * @readonly
+   * @type {boolean}
+   * @memberof Sprite
+   */
+  get isDead (): boolean {
+    return this.hp <= 0
+  }
+
+  /**
+   * Speed of this sprite.
+   *
+   * @type {number}
+   * @memberof Sprite
+   */
+  speed: number = 0
+
+  /**
+   * Moving direction x.
+   *
+   * @type {('L' | 'R')}
+   * @memberof Sprite
+   */
+  dirX: 'L' | 'R' = 'L'
+
+  /**
+   * Moving direction y.
+   *
+   * @type {('T' | 'B')}
+   * @memberof Sprite
+   */
+  dirY: 'T' | 'B' = 'T'
 
   /**
    * Textures of this sprite.
@@ -61,10 +95,19 @@ class Sprite {
   /**
    * Define which texture is going to be shown.
    *
+   * @private
    * @type {number}
    * @memberof Sprite
    */
-  currentTexture: number = 0
+  private currentTexture: number = 0
+
+  /**
+   * Offscreen canvas for this sprite.
+   *
+   * @type {Offscreen}
+   * @memberof Sprite
+   */
+  offscreen: Offscreen = null
 
   /**
    * Texture changing count down.
@@ -78,7 +121,7 @@ class Sprite {
    * @type {number}
    * @memberof Sprite
    */
-  protected textureChangingCountdown: number = 60 * 1
+  protected TEXTURE_CHANGING_COUNTDOWN: number = 60 * 1
   private $textureChangingCountdown: number = 0
   private textChangingCountdownRafID: number = 0
 
@@ -93,11 +136,37 @@ class Sprite {
       this.currentTexture = this.currentTexture >= this.textures.length - 1
         ? 0
         : this.currentTexture + 1
-      this.$textureChangingCountdown = this.textureChangingCountdown
+      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
     } else {
       this.$textureChangingCountdown--
     }
     this.textChangingCountdownRafID = requestAnimationFrame(this.textChangingCountdownExec.bind(this))
+  }
+
+  /**
+   * Raf ID for offscreen drawing.
+   *
+   * @private
+   * @memberof Sprite
+   */
+  private offscreenDrawingRafID = null
+
+  /**
+   * Draw texture into offscreen.
+   *
+   * @protected
+   * @memberof Sprite
+   */
+  protected offscreenDrawingExec () {
+    const context = this.offscreen.context
+    context.putImageData(
+      this.textures[this.currentTexture],
+      0,
+      0
+    )
+    this.offscreenDrawingRafID = requestAnimationFrame(
+      this.offscreenDrawingExec.bind(this)
+    )
   }
 
   /**
@@ -107,28 +176,20 @@ class Sprite {
    */
   $destroy () {
     cancelAnimationFrame(this.textChangingCountdownRafID)
-  }
-
-  /**
-   * Ticking function.
-   *
-   * @memberof Sprite
-   */
-  $tick () {
-
+    cancelAnimationFrame(this.offscreenDrawingRafID)
   }
 
   /**
    * Creates an instance of Sprite.
    *
-   * @param {number} canvasWidth Logical width of canvas.
-   * @param {number} canvasHeight  Logical height of canvas.
    * @memberof Sprite
    */
-  constructor (canvasWidth: number, canvasHeight: number) {
-    this.canvasWidth = canvasWidth
-    this.canvasHeight = canvasHeight
-    this.$textureChangingCountdown = this.textureChangingCountdown
+  constructor () {
+    // Init offscreen.
+    this.offscreen = new Offscreen(this.width, this.height)
+
+    // Start texture changing.
+    this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
     this.textChangingCountdownExec()
   }
 }

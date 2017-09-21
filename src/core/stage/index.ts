@@ -1,5 +1,4 @@
 import { Sprite } from '../../core/sprite'
-import { Offscreen } from './offscreen'
 
 /**
  * Stage class.
@@ -14,24 +13,6 @@ class Stage {
   private $context: CanvasRenderingContext2D
   get canvasElement () { return this.$canvasElement }
   get context () { return this.$context }
-
-  // Offscreens.
-  // ==================================
-  private offscreens: {[name: string]: Offscreen} = {
-    sprites: null
-  }
-
-  /**
-   * Initialize Offscreen canvas.
-   *
-   * @private
-   * @memberof Stage
-   */
-  private initOffscreens () {
-    const width = this.logicalSize[0]
-    const height = this.logicalSize[1]
-    this.offscreens.sprites = new Offscreen(width, height)
-  }
 
   // Content drawing.
   // ==================================
@@ -78,29 +59,99 @@ class Stage {
     })
   }
 
+  // UI.
+  // ==================================
+  printText (text: string, x: number, y: number) {
+    this.$context.fillStyle = '#fff'
+    this.$context.fillText(text, x, y)
+  }
+
+  // Key.
+  // ==================================
+  keyPressed = {
+    T: false, B: false, L: false, R: false, X: false, Y: false, START: false, ESC: false
+  }
+
   /**
-   * Draw all sprites into offscreen and then draw offscreen to main stage.
+   * Register keyboard events.
    *
    * @private
    * @memberof Stage
    */
-  private drawSprites () {
-    const offscreen = this.offscreens.sprites
+  private registerKeyboardEvents () {
+    window.addEventListener('keydown', (event: KeyboardEvent) => {
+      switch (event.keyCode) {
+        case 27:
+          this.keyPressed.ESC = true
+          break
 
-    // Drawing all sprites into offscreen.
-    for (let i = 0, length = this.sprites.length; i < length; i++) {
-      const sprite = this.sprites[i]
-      offscreen.context.putImageData(
-        sprite.textures[sprite.currentTexture],
-        sprite.x,
-        sprite.y
-      )
-    }
+        case 37:
+          this.keyPressed.L = true
+          break
 
-    // Draw offscreen into stage.
-    this.$context.drawImage(offscreen.canvasElement, 0, 0)
+        case 38:
+          this.keyPressed.T = true
+          break
+
+        case 39:
+          this.keyPressed.R = true
+          break
+
+        case 40:
+          this.keyPressed.B = true
+          break
+
+        case 90:
+          this.keyPressed.X = true
+          break
+
+        case 88:
+          this.keyPressed.Y = true
+          break
+
+        default:
+          break
+      }
+    })
+
+    window.addEventListener('keyup', (event: KeyboardEvent) => {
+      switch (event.keyCode) {
+        case 27:
+          this.keyPressed.ESC = false
+          break
+
+        case 37:
+          this.keyPressed.L = false
+          break
+
+        case 38:
+          this.keyPressed.T = false
+          break
+
+        case 39:
+          this.keyPressed.R = false
+          break
+
+        case 40:
+          this.keyPressed.B = false
+          break
+
+        case 90:
+          this.keyPressed.X = false
+          break
+
+        case 88:
+          this.keyPressed.Y = false
+          break
+
+        default:
+          break
+      }
+    })
   }
 
+  // Tick.
+  // ==================================
   /**
    * Clear whole stage.
    *
@@ -112,36 +163,6 @@ class Stage {
       0, 0, this.$canvasElement.width, this.$canvasElement.height
     )
   }
-
-  // Sprites.
-  // ==================================
-  private sprites: Sprite[] = []
-
-  /**
-   * Append a new sprite to stage.
-   *
-   * @param {Sprite} sprite
-   * @memberof Stage
-   */
-  addSprite (sprite: Sprite) {
-    this.sprites.indexOf(sprite) < 0 && this.sprites.push(sprite)
-  }
-
-  /**
-   * Remove target sprite.
-   *
-   * @param {Sprite} sprite
-   * @memberof Stage
-   */
-  removeSprite (sprite: Sprite) {
-    const index = this.sprites.indexOf(sprite)
-    if (index > -1) {
-      this.sprites.splice(index, 1)
-    }
-  }
-
-  // Tick.
-  // ==================================
 
   /**
    * Store all tick callbacks.
@@ -175,7 +196,7 @@ class Stage {
     }
   }
 
-  // Stage controlling.
+  // Tick controlling.
   // ==================================
   private rafID: number = null
 
@@ -186,10 +207,7 @@ class Stage {
    * @memberof Stage
    */
   start () {
-    this.clearStage()
-    this.drawSprites()
-    this.execTickCallback()
-    this.rafID = requestAnimationFrame(this.start.bind(this))
+    this.tick()
   }
 
   /**
@@ -201,10 +219,25 @@ class Stage {
     cancelAnimationFrame(this.rafID)
   }
 
+  /**
+   * Stage ticking function.
+   *
+   * @private
+   * @memberof Stage
+   */
+  private tick () {
+    this.clearStage()
+    this.execTickCallback()
+    this.rafID = requestAnimationFrame(this.tick.bind(this))
+  }
+
   constructor (canvasElement: HTMLCanvasElement, option?: IStageOption) {
     // Canvas Element & Context.
     this.$canvasElement = canvasElement
     this.$context = canvasElement.getContext('2d')
+
+    // Set font style.
+    this.$context.font = '8px Fiexdsys'
 
     // Set options.
     if (typeof option === 'object') {
@@ -217,8 +250,8 @@ class Stage {
       }
     }
 
-    // Initialize Offscreens.
-    this.initOffscreens()
+    // Register Key Events.
+    this.registerKeyboardEvents()
   }
 }
 
@@ -235,3 +268,8 @@ interface IStageOption {
   enableSmooth?: boolean
   scale?: number
 }
+
+/**
+ * Define type for Stage text.
+ */
+type TStageText = [string, number, number]

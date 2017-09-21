@@ -7,7 +7,7 @@ const HEIGHT = 8
 const HP = 1
 
 const COLOR_MAP: TColorMap = {
-  '0': '#000',
+  '0': 'transparent',
   '1': '#6dc2ca',
   '2': '#deeed6'
 }

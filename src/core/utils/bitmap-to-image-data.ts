@@ -17,7 +17,15 @@ function bitmapToImageData (width: number, height: number, bitmap: TBitmap, colo
   for (let i = 0, length = bitmap.length; i < length; i++) {
     const bit = bitmap[i]
     const hexColor = colorMap[bit]
-    const rgbColor = hexToRgb(hexColor).concat(255)  // Push alpha into rgb color array.
+    let rgbColor = []
+
+    // Check if it is Transparent color.
+    if (hexColor === 'transparent') {
+      rgbColor = [0, 0, 0, 0]
+    } else {
+      rgbColor = hexToRgb(hexColor).concat(255)  // Push alpha into rgb color array.
+    }
+
     uint8Arr.set(rgbColor, i * 4)
   }
 

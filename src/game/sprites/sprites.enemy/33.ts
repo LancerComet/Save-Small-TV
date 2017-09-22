@@ -1,4 +1,4 @@
-import { Sprite } from '../../../core/sprite'
+import { Enemy } from './base'
 import { bitmapsToTextures } from '../../../core/utils'
 
 const WIDTH = 16
@@ -55,7 +55,7 @@ const BITMAPS: TBitmaps = [
   ],
 ]
 
-class Sprite33 extends Sprite {
+class Sprite33 extends Enemy {
   width = WIDTH
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)

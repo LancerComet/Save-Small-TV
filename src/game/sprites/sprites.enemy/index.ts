@@ -1,3 +1,4 @@
+import { Enemy } from './base'
 import { Sprite22 } from './22'
 import { Sprite33 } from './33'
 import { floor, rand } from '../../utils'
@@ -17,6 +18,7 @@ function getRandomEnemy () {
 }
 
 export {
+  Enemy,
   Sprite22,
   Sprite33,
   getRandomEnemy

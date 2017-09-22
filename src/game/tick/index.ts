@@ -1,15 +1,11 @@
 /**
  * Game logic.
  * This will be executed in every single frame.
- *
- * Sprite 将会存储两份引用, 一份在这里, 一份在 Stage 中.
- * 这里的 Sprite 用于业务控制, Stage 中的用于绘制.
  */
 
 import { Stage } from '../../core/stage'
-import { Sprite } from '../../core/sprite'
 
-import * as sprites from '../sprites/sprites.enemy'
+import { Enemy, getRandomEnemy } from '../sprites/sprites.enemy'
 import { SmallTV } from '../sprites/sprites.player'
 import { Bullet, Weapon } from '../sprites/sprites.weapon'
 
@@ -22,9 +18,7 @@ const GEN_ENEMY_INTERVAL = 2 * 60  // Frames.
 const GEN_WEAPON_INTERVAL = 5  // Frames.
 
 let score = 0
-let level = 1
-
-let $genSpecialItemsCountdown = 0
+let level = 100
 
 let stageWidth: number = null
 let stageHeight: number = null
@@ -37,9 +31,9 @@ let stageHeight: number = null
  */
 function tick (stage: Stage) {
   Init.$tick(stage)
+  Enemys.$tick(stage)
   Player1.$tick(stage)
   Weapons.$tick(stage)
-  Enemy.$tick(stage)
   UI.$tick(stage)
 }
 
@@ -77,7 +71,7 @@ class Init {
     player1.x = stageWidth / 2 - player1.width / 2
     player1.y = stageHeight / 2 - player1.height / 2
 
-    Player1.player1 = player1
+    Player1.player = player1
   }
 
   /**
@@ -92,7 +86,7 @@ class Init {
     if (!stageWidth || !stageHeight) { Init.size(stage) }
 
     // Init player.
-    !Player1.player1 && Init.player1()
+    !Player1.player && Init.player1()
   }
 }
 
@@ -101,8 +95,8 @@ class Init {
  *
  * @class Enemy
  */
-class Enemy {
-  static enemys: Sprite[] = []
+class Enemys {
+  static enemys: Enemy[] = []
   static $genEnemyCountdown = GEN_ENEMY_INTERVAL
 
   /**
@@ -113,30 +107,28 @@ class Enemy {
    * @memberof Enemy
    */
   static genEnemys (stage: Stage) {
-    const enemys = Enemy.enemys
+    const enemys = Enemys.enemys
 
     // Total enemy count is equal to level.
     if (enemys.length >= level) { return }
 
-    if (Enemy.$genEnemyCountdown > 0) {
-      Enemy.$genEnemyCountdown--
+    if (Enemys.$genEnemyCountdown > 0) {
+      Enemys.$genEnemyCountdown--
       return
     }
 
     const logicSize = stage.logicalSize
 
-    for (let i = 0; i < level; i++) {
-      const EnemyType = sprites.getRandomEnemy()
-      const enemy = new EnemyType()
+    const EnemyType = getRandomEnemy()
+    const enemy = new EnemyType()
 
-      const startPosition = Enemy.createStartPosition()
-      enemy.x = startPosition[0]
-      enemy.y = startPosition[1]
+    const startPosition = Enemys.createStartPosition()
+    enemy.x = startPosition[0]
+    enemy.y = startPosition[1]
 
-      enemys.push(enemy)
-    }
+    enemys.push(enemy)
 
-    Enemy.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+    Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
   }
 
   /**
@@ -153,19 +145,32 @@ class Enemy {
   }
 
   /**
-   * Tick all enemys.
+   * Detect player distance.
    *
    * @static
+   * @param {Enemy} enemy
    * @memberof Enemy
    */
-  static tickEnemys (stage: Stage) {
-    const enemys = Enemy.enemys
+  static detectPlayer (enemy: Enemy) {
+    const startX = enemy.x
+    const startY = enemy.y
+    const endX = startX + enemy.width
+    const endY = startY + enemy.height
 
-    for (let i = 0, length = enemys.length; i < length; i++) {
-      const enemy = enemys[i]
-      Enemy.detectAttack(enemy)
-      Enemy.autoMove(enemy)
-      Enemy.draw(stage, enemy)
+    const allPlayers = Player.allPlayers
+    for (let i = 0, length = allPlayers.length; i < length; i++) {
+      const player = allPlayers[i]
+      const $startX = player.x
+      const $startY = player.y
+      const $endX = player.x + player.width
+      const $endY = player.y + player.height
+
+      if (
+        (($startX >= startX && $startX <= endX) || ($endX >= startX && $endX <= endX)) &&
+        (($startY >= startY && $startY <= endY) || ($endY >= startY && $endY <= endY))
+      ) {
+        player.isDead = true
+      }
     }
   }
 
@@ -173,10 +178,10 @@ class Enemy {
    * Detect attacking for single enemy,
    *
    * @static
-   * @param {Sprite} enemy
+   * @param {Enemy} enemy
    * @memberof Enemy
    */
-  static detectAttack (enemy: Sprite) {
+  static detectAttack (enemy: Enemy) {
     const padding = enemy.padding
     const startX = enemy.x - padding
     const startY = enemy.y - padding
@@ -191,10 +196,10 @@ class Enemy {
    * Auto move single enemy.
    *
    * @static
-   * @param {Sprite} enemy
+   * @param {Enemy} enemy
    * @memberof Enemy
    */
-  static autoMove (enemy: Sprite) {
+  static autoMove (enemy: Enemy) {
     if (enemy.isDead) { return }
 
     const speed = enemy.speed
@@ -233,10 +238,10 @@ class Enemy {
    *
    * @static
    * @param {Stage} stage
-   * @param {Sprite} enemy
+   * @param {Enemy} enemy
    * @memberof Enemy
    */
-  static draw (stage: Stage, enemy: Sprite) {
+  static draw (stage: Stage, enemy: Enemy) {
     stage.context.drawImage(
       enemy.offscreen.canvasElement,
       enemy.x,
@@ -252,8 +257,15 @@ class Enemy {
    * @memberof Enemy
    */
   static $tick (stage: Stage) {
-    Enemy.genEnemys(stage)
-    Enemy.tickEnemys(stage)
+    Enemys.genEnemys(stage)
+
+    for (let i = 0, length = Enemys.enemys.length; i < length; i++) {
+      const enemy = Enemys.enemys[i]
+      Enemys.detectPlayer(enemy)
+      Enemys.detectAttack(enemy)
+      Enemys.autoMove(enemy)
+      Enemys.draw(stage, enemy)
+    }
   }
 
   /**
@@ -263,8 +275,8 @@ class Enemy {
    * @memberof Enemy
    */
   static $reset () {
-    Enemy.enemys = []
-    Enemy.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+    Enemys.enemys = []
+    Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
   }
 }
 
@@ -273,71 +285,85 @@ class Enemy {
  *
  * @class Player1
  */
-class Player1 {
-  static player1: SmallTV = null
-  static weapons: Sprite[] = []
+class Player {
+  static get allPlayers () {
+    return [
+      Player1.player
+    ]
+  }
 
-  static keyControl (stage: Stage) {
-    const player1 = Player1.player1
+  static weapons: Weapon[] = []
 
+  static keyControl (stage: Stage, player: SmallTV) {
     const keyPressed = stage.keyPressed
 
     if (keyPressed.L) {
-      player1.dirX = player1.weaponDirection = 'L'
+      player.dirX = player.weaponDirection = 'L'
     } else if (keyPressed.R) {
-      player1.dirX = player1.weaponDirection = 'R'
+      player.dirX = player.weaponDirection = 'R'
     } else {
-      player1.dirX = null
+      player.dirX = null
     }
 
     if (keyPressed.T) {
-      player1.dirY = player1.weaponDirection = 'T'
+      player.dirY = player.weaponDirection = 'T'
     } else if (keyPressed.B) {
-      player1.dirY = player1.weaponDirection = 'B'
+      player.dirY = player.weaponDirection = 'B'
     } else {
-      player1.dirY = null
+      player.dirY = null
     }
 
-    player1.attacking = keyPressed.X || keyPressed.Y || false
+    player.attacking = keyPressed.X || keyPressed.Y || false
   }
 
-  static move (stage: Stage) {
-    const player1 = Player1.player1
-    if (player1.dirX === 'L') { player1.x -= player1.speed }
-    if (player1.dirX === 'R') { player1.x += player1.speed }
-    if (player1.dirY === 'T') { player1.y -= player1.speed }
-    if (player1.dirY === 'B') { player1.y += player1.speed }
+  static move (stage: Stage, player: SmallTV) {
+    if (player.dirX === 'L') { player.x -= player.speed }
+    if (player.dirX === 'R') { player.x += player.speed }
+    if (player.dirY === 'T') { player.y -= player.speed }
+    if (player.dirY === 'B') { player.y += player.speed }
   }
 
-  static positionLimit () {
-    const player1 = Player1.player1
-    if (player1.x <= 0) { player1.x = 0 }
-    if (player1.x >= stageWidth - player1.width) { player1.x = stageWidth - player1.width }
-    if (player1.y <= 0) { player1.y = 0 }
-    if (player1.y >= stageHeight - player1.height) { player1.y = stageHeight - player1.height }
+  static positionLimit (player: SmallTV) {
+    if (player.x <= 0) { player.x = 0 }
+    if (player.x >= stageWidth - player.width) { player.x = stageWidth - player.width }
+    if (player.y <= 0) { player.y = 0 }
+    if (player.y >= stageHeight - player.height) { player.y = stageHeight - player.height }
   }
 
-  static draw (stage: Stage) {
-    const player1 = Player1.player1
+  static draw (stage: Stage, player: SmallTV) {
     stage.context.drawImage(
-      player1.offscreen.canvasElement, player1.x, player1.y
+      player.offscreen.canvasElement, player.x, player.y
     )
   }
 
-  static $tick (stage: Stage) {
-    Player1.keyControl(stage)
-    Player1.move(stage)
-    Player1.positionLimit()
-    Player1.draw(stage)
+  static $tick (stage: Stage, player: SmallTV) {
+    Player.keyControl(stage, player)
+    Player.move(stage, player)
+    Player.positionLimit(player)
+    Player.draw(stage, player)
   }
 }
 
+/**
+ * Player 1 Class.
+ *
+ * @class Player1
+ */
+class Player1 {
+  static player: SmallTV = null
+
+  static $tick (stage: Stage) {
+    Player.$tick(stage, Player1.player)
+  }
+}
+
+/**
+ * Weapons.
+ *
+ * @class Weapons
+ */
 class Weapons {
   static generateWeaponTimer = GEN_WEAPON_INTERVAL
-
-  static get players () {
-    return [Player1.player1]
-  }
 
   static createWeapon () {
     if (Weapons.generateWeaponTimer > 0) {
@@ -345,8 +371,8 @@ class Weapons {
       return
     }
 
-    for (let i = 0, length = Weapons.players.length; i < length; i++) {
-      const player = Weapons.players[i]
+    for (let i = 0, length = Player.allPlayers.length; i < length; i++) {
+      const player = Player.allPlayers[i]
       if (!player || !player.attacking) { continue }
 
       const CurrentWeapon = player.currentWeaponClass
@@ -363,8 +389,8 @@ class Weapons {
   }
 
   static tickWeapon (stage: Stage) {
-    for (let i = 0, playerLength = Weapons.players.length; i < playerLength; i++) {
-      const player = Weapons.players[i]
+    for (let i = 0, playerLength = Player.allPlayers.length; i < playerLength; i++) {
+      const player = Player.allPlayers[i]
       if (!player) { continue }
 
       const weapons = player.weapons
@@ -415,11 +441,16 @@ class Weapons {
  */
 class UI {
   static printTitle (stage: Stage) {
-    stage.printText('Save small TV v0.3', 5, 10)
+    stage.printText('=== Save small TV v0.3 ===', 5, 10)
+  }
+
+  static printScore (stage: Stage) {
+    stage.printText(`Score: ${score}, Level: ${level}`, 120, 10)
   }
 
   static $tick (stage: Stage) {
     UI.printTitle(stage)
+    UI.printScore(stage)
   }
 }
 

@@ -79,6 +79,14 @@ class SmallTV extends Sprite {
    */
   attacking: boolean = false
 
+  /**
+   * Is dead?
+   *
+   * @type {boolean}
+   * @memberof SmallTV
+   */
+  isDead: boolean = false
+
   constructor () {
     super()
     this.x = 0
@@ -86,6 +94,7 @@ class SmallTV extends Sprite {
     this.hp = HP
     this.speed = 1
     this.padding = 0
+    this.isDead = false
 
     // Unique props of player type.
     this.weaponCount = 1

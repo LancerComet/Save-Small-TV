@@ -34,17 +34,6 @@ class Sprite {
   hp: number = 0
 
   /**
-   * Wether this sprite is dead.
-   *
-   * @readonly
-   * @type {boolean}
-   * @memberof Sprite
-   */
-  get isDead (): boolean {
-    return this.hp <= 0
-  }
-
-  /**
    * Speed of this sprite.
    *
    * @type {number}

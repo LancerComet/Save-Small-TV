@@ -3,6 +3,8 @@
 import { Sprite } from '../../../core/sprite'
 
 class Weapon extends Sprite {
+  direction: TDirection
+
   constructor () {
     super()
   }
@@ -11,4 +13,3 @@ class Weapon extends Sprite {
 export {
   Weapon
 }
-

@@ -91,7 +91,8 @@ class Bullet extends Weapon {
     this.x = param.x
     this.y = param.y
     this.speed = SPEED
-    this.padding = 3
+    this.paddingX = 3
+    this.paddingY = 3
     this.direction = param.direction
 
     this.TEXTURE_CHANGING_COUNTDOWN = false

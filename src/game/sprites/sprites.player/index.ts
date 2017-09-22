@@ -93,7 +93,8 @@ class SmallTV extends Sprite {
     this.y = 0
     this.hp = HP
     this.speed = 1
-    this.padding = 0
+    this.paddingX = 0
+    this.paddingY = 0
     this.isDead = false
 
     // Unique props of player type.

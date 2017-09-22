@@ -87,7 +87,8 @@ class Sprite {
    * @type {number}
    * @memberof Sprite
    */
-  padding: number = 0
+  paddingX: number = 0
+  paddingY: number = 0
 
   /**
    * Define which texture is going to be shown.

@@ -81,6 +81,10 @@ class Stage {
   private registerKeyboardEvents () {
     window.addEventListener('keydown', (event: KeyboardEvent) => {
       switch (event.keyCode) {
+        case 13:
+          this.keyPressed.START = true
+          break
+
         case 27:
           this.keyPressed.ESC = true
           break
@@ -116,6 +120,10 @@ class Stage {
 
     window.addEventListener('keyup', (event: KeyboardEvent) => {
       switch (event.keyCode) {
+        case 13:
+          this.keyPressed.START = false
+          break
+
         case 27:
           this.keyPressed.ESC = false
           break

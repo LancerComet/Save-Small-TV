@@ -66,7 +66,8 @@ class Sprite33 extends Enemy {
     this.y = 0
     this.hp = HP
     this.speed = .5
-    this.padding = 2
+    this.paddingX = 5
+    this.paddingY = 5
     this.TEXTURE_CHANGING_COUNTDOWN = 60 * 1
   }
 }

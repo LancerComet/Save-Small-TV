@@ -17,8 +17,12 @@ const MAX_ENEMYS = 10
 const GEN_ENEMY_INTERVAL = 2 * 60  // Frames.
 const GEN_WEAPON_INTERVAL = 5  // Frames.
 
-let score = 0
-let level = 100
+const DEFAULT_LEVEL = 100
+const DEFAULT_SCORE = 0
+
+let score = DEFAULT_SCORE
+let level = DEFAULT_LEVEL
+let gameOver = false
 
 let stageWidth: number = null
 let stageHeight: number = null
@@ -30,11 +34,16 @@ let stageHeight: number = null
  * @param {Stage} stage
  */
 function tick (stage: Stage) {
+  if (gameOver) {
+    return Game.$gameInWaiting(stage)
+  }
+
   Init.$tick(stage)
   Enemys.$tick(stage)
   Player1.$tick(stage)
   Weapons.$tick(stage)
   UI.$tick(stage)
+  Game.$tick()
 }
 
 export {
@@ -67,11 +76,7 @@ class Init {
    * @memberof Init
    */
   static player1 () {
-    const player1 = new SmallTV()
-    player1.x = stageWidth / 2 - player1.width / 2
-    player1.y = stageHeight / 2 - player1.height / 2
-
-    Player1.player = player1
+    Player1.$reset()
   }
 
   /**
@@ -152,10 +157,12 @@ class Enemys {
    * @memberof Enemy
    */
   static detectPlayer (enemy: Enemy) {
-    const startX = enemy.x
-    const startY = enemy.y
-    const endX = startX + enemy.width
-    const endY = startY + enemy.height
+    const paddingX = enemy.paddingX
+    const paddingY = enemy.paddingY
+    const startX = enemy.x + paddingX
+    const startY = enemy.y + paddingY
+    const endX = startX + enemy.width - paddingX
+    const endY = startY + enemy.height - paddingY
 
     const allPlayers = Player.allPlayers
     for (let i = 0, length = allPlayers.length; i < length; i++) {
@@ -182,13 +189,14 @@ class Enemys {
    * @memberof Enemy
    */
   static detectAttack (enemy: Enemy) {
-    const padding = enemy.padding
-    const startX = enemy.x - padding
-    const startY = enemy.y - padding
+    const pdX = enemy.paddingX
+    const pdY = enemy.paddingY
+    const startX = enemy.x - pdX
+    const startY = enemy.y - pdY
     const sizeX = enemy.width
     const sizeY = enemy.height
-    const endX = enemy.x - sizeX - padding
-    const endY = enemy.y - sizeY - padding
+    const endX = enemy.x - sizeX - pdX
+    const endY = enemy.y - sizeY - pdY
     // TODO: line 435.
   }
 
@@ -355,6 +363,14 @@ class Player1 {
   static $tick (stage: Stage) {
     Player.$tick(stage, Player1.player)
   }
+
+  static $reset () {
+    const player1 = new SmallTV()
+    player1.x = stageWidth / 2 - player1.width / 2
+    player1.y = stageHeight / 2 - player1.height / 2
+
+    Player1.player = player1
+  }
 }
 
 /**
@@ -448,9 +464,60 @@ class UI {
     stage.printText(`Score: ${score}, Level: ${level}`, 120, 10)
   }
 
+  static $printGameOver (stage: Stage) {
+    stage.printText(
+      'Game over young man !!', stageWidth / 2 - 50, stageHeight / 2 - 14
+    )
+    stage.printText(
+      `Your score is ${score}.`, stageWidth / 2 - 29, stageHeight / 2 - 2
+    )
+    stage.printText(
+      'Press enter to restart.', stageWidth / 2 - 42, stageHeight / 2 + 9
+    )
+  }
+
   static $tick (stage: Stage) {
     UI.printTitle(stage)
     UI.printScore(stage)
+  }
+}
+
+/**
+ * Game controlling class.
+ *
+ * @class Game
+ */
+class Game {
+  static detectGameOver () {
+    const allPlayers = Player.allPlayers
+    const deadPlayer = allPlayers.filter(item => item.isDead)
+    if (deadPlayer.length === allPlayers.length) {
+      gameOver = true
+    }
+  }
+
+  static waitRestart (stage: Stage) {
+    if (stage.keyPressed.START) {
+      Game.$restartGame()
+    }
+  }
+
+  static $restartGame () {
+    gameOver = false
+    level = DEFAULT_LEVEL
+    score = DEFAULT_SCORE
+    Enemys.$reset()
+    Weapons.$reset()
+    Player1.$reset()
+  }
+
+  static $gameInWaiting (stage: Stage) {
+    UI.$printGameOver(stage)
+    Game.waitRestart(stage)
+  }
+
+  static $tick () {
+    Game.detectGameOver()
   }
 }
 

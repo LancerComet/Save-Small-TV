@@ -182,25 +182,6 @@ class Enemys {
   }
 
   /**
-   * Detect attacking for single enemy,
-   *
-   * @static
-   * @param {Enemy} enemy
-   * @memberof Enemy
-   */
-  static detectAttack (enemy: Enemy) {
-    const pdX = enemy.paddingX
-    const pdY = enemy.paddingY
-    const startX = enemy.x - pdX
-    const startY = enemy.y - pdY
-    const sizeX = enemy.width
-    const sizeY = enemy.height
-    const endX = enemy.x - sizeX - pdX
-    const endY = enemy.y - sizeY - pdY
-    // TODO: line 435.
-  }
-
-  /**
    * Auto move single enemy.
    *
    * @static
@@ -208,7 +189,16 @@ class Enemys {
    * @memberof Enemy
    */
   static autoMove (enemy: Enemy) {
-    if (enemy.isDead) { return }
+    if (enemy.isDead) {
+      if (enemy.destroyCountdown > 0) {
+        enemy.destroyCountdown--
+      } else {
+        Enemys.enemys.splice(
+          Enemys.enemys.indexOf(enemy), 1
+        )
+      }
+      return
+    }
 
     const speed = enemy.speed
     const x = enemy.x
@@ -269,8 +259,8 @@ class Enemys {
 
     for (let i = 0, length = Enemys.enemys.length; i < length; i++) {
       const enemy = Enemys.enemys[i]
+      if (!enemy) { continue }
       Enemys.detectPlayer(enemy)
-      Enemys.detectAttack(enemy)
       Enemys.autoMove(enemy)
       Enemys.draw(stage, enemy)
     }
@@ -381,6 +371,12 @@ class Player1 {
 class Weapons {
   static generateWeaponTimer = GEN_WEAPON_INTERVAL
 
+  static get allWeapons () {
+    return [
+      Player1.player.weapons
+    ]
+  }
+
   static createWeapon () {
     if (Weapons.generateWeaponTimer > 0) {
       Weapons.generateWeaponTimer--
@@ -417,6 +413,9 @@ class Weapons {
         const weapon = weapons[j]
         if (!weapon) { continue }
 
+        const weaponPdX = weapon.paddingX
+        const weaponPdY = weapon.paddingY
+
         // Move weapon.
         const direction = weapon.direction
         if (direction === 'L') { weapon.x -= weapon.speed }
@@ -424,12 +423,28 @@ class Weapons {
         if (direction === 'T') { weapon.y -= weapon.speed }
         if (direction === 'B') { weapon.y += weapon.speed }
 
+        // If weapon hits some enemy.
+        for (let k = 0, enemyLength = Enemys.enemys.length; k < enemyLength; k++) {
+          const enemy = Enemys.enemys[k]
+          if (!enemy || enemy.isDead) { continue }
+
+          const startX = enemy.x + enemy.paddingX
+          const startY = enemy.y + enemy.paddingY
+          const endX = enemy.x + enemy.width - enemy.paddingX
+          const endY = enemy.y + enemy.height - enemy.paddingY
+
+          if (
+            (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
+            (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
+          ) {
+            enemy.hp -= weapon.attack
+            weapons.splice(j, 1)
+          }
+        }
+
         // If weapon moves out, destroy it.
         if (isOutOfStage(weapon.x, weapon.y, weapon.width, weapon.height)) {
-          player.weapons.splice(
-            player.weapons.indexOf(weapon),
-            1
-          )
+          player.weapons.splice(j, 1)
           continue
         }
 
@@ -530,6 +545,6 @@ function randomY () {
 }
 
 function isOutOfStage (x: number, y: number, width: number, height: number) {
-  return (x > stageWidth + width || x < 0 - width) &&
-    (y > stageHeight + height || y < 0 - height)
+  return (x >= stageWidth + width || x <= 0 - width) ||
+    (y >= stageHeight + height || y <= 0 - height)
 }

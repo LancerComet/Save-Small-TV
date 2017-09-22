@@ -67,6 +67,7 @@ const DIRECTION_TEXTURE_MAPPING = {
 class Bullet extends Weapon {
   width = WIDTH
   height = HEIGHT
+  attack = 10
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   /**

@@ -12,6 +12,11 @@ class Enemy extends Sprite {
     return this.hp <= 0
   }
 
+  /**
+   * Countdown before remove this enemy.
+   */
+  destroyCountdown: number = 0
+
   constructor () {
     super()
   }

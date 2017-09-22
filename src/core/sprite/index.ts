@@ -103,11 +103,11 @@ class Sprite {
   /**
    * Define which texture is going to be shown.
    *
-   * @private
+   * @protected
    * @type {number}
    * @memberof Sprite
    */
-  private currentTexture: number = 0
+  protected currentTexture: number = 0
 
   /**
    * Offscreen canvas for this sprite.

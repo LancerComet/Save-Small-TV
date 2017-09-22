@@ -7,10 +7,11 @@
  */
 
 import { Stage } from '../../core/stage'
-
 import { Sprite } from '../../core/sprite'
+
 import * as sprites from '../sprites/sprites.enemy'
 import { SmallTV } from '../sprites/sprites.player'
+import { Bullet, Weapon } from '../sprites/sprites.weapon'
 
 import { floor, rand } from '../utils'
 
@@ -18,13 +19,11 @@ const MAX_SPECIAL_ITEMS = 1
 const GEN_SPECIAL_INTERVAL = 30 * 60  // Frames.
 const MAX_ENEMYS = 10
 const GEN_ENEMY_INTERVAL = 2 * 60  // Frames.
-
-const bullets = []
+const GEN_WEAPON_INTERVAL = 5  // Frames.
 
 let score = 0
 let level = 1
 
-let $genEnemyCountdown = 0
 let $genSpecialItemsCountdown = 0
 
 let stageWidth: number = null
@@ -39,6 +38,7 @@ let stageHeight: number = null
 function tick (stage: Stage) {
   Init.$tick(stage)
   Player1.$tick(stage)
+  Weapons.$tick(stage)
   Enemy.$tick(stage)
   UI.$tick(stage)
 }
@@ -103,6 +103,7 @@ class Init {
  */
 class Enemy {
   static enemys: Sprite[] = []
+  static $genEnemyCountdown = GEN_ENEMY_INTERVAL
 
   /**
    * Generate enemys.
@@ -114,23 +115,41 @@ class Enemy {
   static genEnemys (stage: Stage) {
     const enemys = Enemy.enemys
 
+    // Total enemy count is equal to level.
     if (enemys.length >= level) { return }
 
-    if ($genEnemyCountdown > 0) {
-      $genEnemyCountdown--
+    if (Enemy.$genEnemyCountdown > 0) {
+      Enemy.$genEnemyCountdown--
       return
     }
 
     const logicSize = stage.logicalSize
 
-    // Enemy count is based on current level.
     for (let i = 0; i < level; i++) {
       const EnemyType = sprites.getRandomEnemy()
       const enemy = new EnemyType()
 
-      // TODO: Set enemy's position.
+      const startPosition = Enemy.createStartPosition()
+      enemy.x = startPosition[0]
+      enemy.y = startPosition[1]
+
       enemys.push(enemy)
     }
+
+    Enemy.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+  }
+
+  /**
+   * Create enemy start position.
+   *
+   * @static
+   * @memberof Enemy
+   */
+  static createStartPosition () {
+    return [
+      [rand(stageWidth), randomY()],
+      [randomX(), rand(stageHeight)]
+    ][floor(rand(2))]
   }
 
   /**
@@ -245,6 +264,7 @@ class Enemy {
    */
   static $reset () {
     Enemy.enemys = []
+    Enemy.$genEnemyCountdown = GEN_ENEMY_INTERVAL
   }
 }
 
@@ -255,26 +275,30 @@ class Enemy {
  */
 class Player1 {
   static player1: SmallTV = null
+  static weapons: Sprite[] = []
 
   static keyControl (stage: Stage) {
     const player1 = Player1.player1
+
     const keyPressed = stage.keyPressed
 
     if (keyPressed.L) {
-      player1.dirX = 'L'
+      player1.dirX = player1.weaponDirection = 'L'
     } else if (keyPressed.R) {
-      player1.dirX = 'R'
+      player1.dirX = player1.weaponDirection = 'R'
     } else {
       player1.dirX = null
     }
 
     if (keyPressed.T) {
-      player1.dirY = 'T'
+      player1.dirY = player1.weaponDirection = 'T'
     } else if (keyPressed.B) {
-      player1.dirY = 'B'
+      player1.dirY = player1.weaponDirection = 'B'
     } else {
       player1.dirY = null
     }
+
+    player1.attacking = keyPressed.X || keyPressed.Y || false
   }
 
   static move (stage: Stage) {
@@ -308,6 +332,82 @@ class Player1 {
   }
 }
 
+class Weapons {
+  static generateWeaponTimer = GEN_WEAPON_INTERVAL
+
+  static get players () {
+    return [Player1.player1]
+  }
+
+  static createWeapon () {
+    if (Weapons.generateWeaponTimer > 0) {
+      Weapons.generateWeaponTimer--
+      return
+    }
+
+    for (let i = 0, length = Weapons.players.length; i < length; i++) {
+      const player = Weapons.players[i]
+      if (!player || !player.attacking) { continue }
+
+      const CurrentWeapon = player.currentWeaponClass
+      const weapon: Weapon = new CurrentWeapon(<IWeapon> {
+        direction: player.weaponDirection,
+        x: player.x,
+        y: player.y
+      })
+
+      player.weapons.push(weapon)
+    }
+
+    Weapons.generateWeaponTimer = GEN_WEAPON_INTERVAL
+  }
+
+  static tickWeapon (stage: Stage) {
+    for (let i = 0, playerLength = Weapons.players.length; i < playerLength; i++) {
+      const player = Weapons.players[i]
+      if (!player) { continue }
+
+      const weapons = player.weapons
+      const weaponLength = weapons.length
+      if (!weaponLength) { continue }
+
+      for (let j = 0; j < weaponLength; j++) {
+        const weapon = weapons[j]
+        if (!weapon) { continue }
+
+        // Move weapon.
+        const direction = weapon.direction
+        if (direction === 'L') { weapon.x -= weapon.speed }
+        if (direction === 'R') { weapon.x += weapon.speed }
+        if (direction === 'T') { weapon.y -= weapon.speed }
+        if (direction === 'B') { weapon.y += weapon.speed }
+
+        // If weapon moves out, destroy it.
+        if (isOutOfStage(weapon.x, weapon.y, weapon.width, weapon.height)) {
+          player.weapons.splice(
+            player.weapons.indexOf(weapon),
+            1
+          )
+          continue
+        }
+
+        stage.context.drawImage(
+          weapon.offscreen.canvasElement, weapon.x, weapon.y
+        )
+      }
+    }
+  }
+
+  static $tick (stage: Stage) {
+    Weapons.createWeapon()
+    Weapons.tickWeapon(stage)
+  }
+
+  static $reset () {
+    Weapons.generateWeaponTimer = GEN_WEAPON_INTERVAL
+  }
+}
+
 /**
  * UI.
  *
@@ -315,10 +415,23 @@ class Player1 {
  */
 class UI {
   static printTitle (stage: Stage) {
-    stage.printText('Save small TV v0.3', 10, 10)
+    stage.printText('Save small TV v0.3', 5, 10)
   }
 
   static $tick (stage: Stage) {
     UI.printTitle(stage)
   }
+}
+
+function randomX () {
+  return [-20, stageWidth + 20][floor(rand(2))]
+}
+
+function randomY () {
+  return [-20, stageHeight + 20][floor(rand(2))]
+}
+
+function isOutOfStage (x: number, y: number, width: number, height: number) {
+  return (x > stageWidth + width || x < 0 - width) &&
+    (y > stageHeight + height || y < 0 - height)
 }

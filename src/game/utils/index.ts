@@ -13,8 +13,8 @@ function floor (num: number) {
  *
  * @returns
  */
-function rand () {
-  return Math.random()
+function rand (radius: number = 1) {
+  return Math.random() * radius
 }
 
 export {

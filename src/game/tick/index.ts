@@ -814,6 +814,15 @@ class Player {
 
   static draw (stage: Stage) {
     const player = Player.instance
+
+    // 无敌状态闪烁：每隔一段时间隐藏玩家
+    if (player.isInvincible) {
+      const blink = Math.floor(player.invincibleTimer * 10) % 2 === 0
+      if (blink) {
+        return // 闪烁时跳过绘制
+      }
+    }
+
     player.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(player.x, player.y)
     stage.context.drawImage(

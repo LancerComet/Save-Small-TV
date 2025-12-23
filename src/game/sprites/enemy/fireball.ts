@@ -1,6 +1,7 @@
 import { SpriteBitmaps, SpriteColorMap } from '../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../core/utils'
 import { Enemy } from './base'
+import { ENEMY_ATTACK } from '../../config'
 
 const WIDTH = 16
 const HEIGHT = 16
@@ -75,6 +76,7 @@ class FireballEnemy extends Enemy {
     this.paddingY = 2
     this.TEXTURE_CHANGING_COUNTDOWN = 8 // 快速闪烁
     this.destroyCountdown = 0
+    this.attack = ENEMY_ATTACK.FIREBALL
   }
 }
 

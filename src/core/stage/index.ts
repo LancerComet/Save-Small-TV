@@ -1,6 +1,6 @@
-import { Sprite } from '../../core/sprite'
 import { Camera } from '../../core/camera'
 import { GamepadController } from '../../core/gamepad'
+import { Sprite } from '../../core/sprite'
 
 /**
  * Stage class.
@@ -22,6 +22,7 @@ class Stage {
   private get scale () {
     return this._scale
   }
+
   private set scale (newValue) {
     this._scale = newValue
     this.$context.scale(newValue, newValue)
@@ -73,20 +74,38 @@ class Stage {
 
   // UI.
   // ==================================
-  printText (text: string, x: number, y: number) {
+  measureText (text: string, fontSize: number = 8): number {
+    this.$context.font = `${fontSize}px kenpixel`
+    const width = this.$context.measureText(text).width
+    this.$context.font = '8px kenpixel'
+    return width
+  }
+
+  printText (text: string, x: number, y: number, fontSize: number = 8) {
+    this.$context.font = `${fontSize}px kenpixel`
     this.$context.fillStyle = '#fff'
     this.$context.fillText(text, x, y)
+    this.$context.font = '8px kenpixel' // 恢复默认
   }
 
   // Key.
   // ==================================
   keyPressed = {
     // 移动键 (WASD)
-    W: false, A: false, S: false, D: false,
+    W: false,
+    A: false,
+    S: false,
+    D: false,
     // 发射键 (箭头)
-    UP: false, DOWN: false, LEFT: false, RIGHT: false,
+    UP: false,
+    DOWN: false,
+    LEFT: false,
+    RIGHT: false,
     // 功能键
-    X: false, Y: false, START: false, ESC: false
+    X: false,
+    Y: false,
+    START: false,
+    ESC: false
   }
 
   // Gamepad.
@@ -170,19 +189,19 @@ class Stage {
           break
 
         // WASD - 移动
-        case 87:  // W
+        case 87: // W
           this.keyPressed.W = true
           break
 
-        case 65:  // A
+        case 65: // A
           this.keyPressed.A = true
           break
 
-        case 83:  // S
+        case 83: // S
           this.keyPressed.S = true
           break
 
-        case 68:  // D
+        case 68: // D
           this.keyPressed.D = true
           break
 
@@ -227,19 +246,19 @@ class Stage {
           break
 
         // WASD - 移动
-        case 87:  // W
+        case 87: // W
           this.keyPressed.W = false
           break
 
-        case 65:  // A
+        case 65: // A
           this.keyPressed.A = false
           break
 
-        case 83:  // S
+        case 83: // S
           this.keyPressed.S = false
           break
 
-        case 68:  // D
+        case 68: // D
           this.keyPressed.D = false
           break
 
@@ -266,9 +285,9 @@ class Stage {
    * @memberof Stage
    */
   private clearStage () {
-    this.$context.clearRect(
-      0, 0, this.$canvasElement.width, this.$canvasElement.height
-    )
+    // 使用逻辑尺寸清除，因为 context 已被 scale
+    const [logicalWidth, logicalHeight] = this.logicalSize
+    this.$context.clearRect(0, 0, logicalWidth, logicalHeight)
   }
 
   /**
@@ -371,7 +390,7 @@ class Stage {
     this.$context = canvasElement.getContext('2d')
 
     // Set font style.
-    this.$context.font = '8px Fiexdsys'
+    this.$context.font = '8px kenpixel'
 
     // Set options.
     if (typeof option === 'object') {

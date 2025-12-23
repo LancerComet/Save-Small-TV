@@ -1,6 +1,7 @@
 import { SpriteColorMap, SpriteBitmaps } from '../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../core/utils'
 import { Enemy } from './base'
+import { ENEMY_ATTACK } from '../../config'
 
 const WIDTH = 16
 const HEIGHT = 16
@@ -71,6 +72,7 @@ class Sprite33 extends Enemy {
     this.paddingY = 3
     this.TEXTURE_CHANGING_COUNTDOWN = 60 * 1
     this.destroyCountdown = 0
+    this.attack = ENEMY_ATTACK.ENEMY_33
   }
 }
 

@@ -5,10 +5,10 @@ import { WeaponBase } from '../weapon/defines/_base.ts'
 import { Bullet } from '../weapon/defines/bullet.ts'
 import { PowerBullet } from '../weapon/defines/power-bullet.ts'
 import { WeaponType } from '../weapon/types.ts'
+import { PLAYER_MAX_HP, PLAYER_INVINCIBLE_TIME } from '../../config'
 
 const WIDTH = 8
 const HEIGHT = 8
-const HP = 1
 
 const COLOR_MAP: SpriteColorMap = {
   0: 'transparent',
@@ -100,12 +100,42 @@ class SmallTV extends Sprite {
   attacking: boolean = false
 
   /**
-   * Is dead?
+   * 玩家最大生命值
    *
+   * @type {number}
+   * @memberof SmallTV
+   */
+  maxHp: number = PLAYER_MAX_HP
+
+  /**
+   * 无敌时间剩余（秒）
+   *
+   * @type {number}
+   * @memberof SmallTV
+   */
+  invincibleTimer: number = 0
+
+  /**
+   * 是否处于无敌状态
+   *
+   * @readonly
    * @type {boolean}
    * @memberof SmallTV
    */
-  isDead: boolean = false
+  get isInvincible (): boolean {
+    return this.invincibleTimer > 0
+  }
+
+  /**
+   * Is dead?
+   *
+   * @readonly
+   * @type {boolean}
+   * @memberof SmallTV
+   */
+  get isDead (): boolean {
+    return this.hp <= 0
+  }
 
   /**
    * Analog movement values from gamepad.
@@ -178,15 +208,62 @@ class SmallTV extends Sprite {
     }
   }
 
+  /**
+   * 受到伤害
+   *
+   * @param {number} damage - 伤害值
+   * @memberof SmallTV
+   */
+  takeDamage (damage: number) {
+    if (this.isInvincible || this.isDead) {
+      return
+    }
+    this.hp -= damage
+    if (this.hp < 0) {
+      this.hp = 0
+    }
+    // 受伤后进入无敌状态
+    if (!this.isDead) {
+      this.invincibleTimer = PLAYER_INVINCIBLE_TIME
+    }
+  }
+
+  /**
+   * 更新无敌状态计时器
+   *
+   * @param {number} deltaTime - 时间增量（秒）
+   * @memberof SmallTV
+   */
+  tickInvincible (deltaTime: number) {
+    if (this.invincibleTimer > 0) {
+      this.invincibleTimer -= deltaTime
+      if (this.invincibleTimer < 0) {
+        this.invincibleTimer = 0
+      }
+    }
+  }
+
+  /**
+   * 重置玩家状态（用于重新开始游戏）
+   *
+   * @memberof SmallTV
+   */
+  reset () {
+    this.hp = PLAYER_MAX_HP
+    this.invincibleTimer = 0
+    this.weaponDuration = 0
+    this.currentWeaponType = WeaponType.BULLET
+    this.currentWeaponClass = Bullet
+  }
+
   constructor () {
     super()
     this.x = 0
     this.y = 0
-    this.hp = HP
+    this.hp = PLAYER_MAX_HP
     this.speed = 1
     this.paddingX = 1 // 缩小左右碰撞区域
     this.paddingY = 2 // 顶部天线不算碰撞区域
-    this.isDead = false
 
     // Unique props of player type.
     this.weaponCount = 1

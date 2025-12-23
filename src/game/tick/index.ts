@@ -7,16 +7,19 @@ import { Stage } from '../../core/stage'
 
 import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
-import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/effects'
+import { BloodEffect, BloodParticle, ExplosionEffect, ExplosionParticle } from '../sprites/effects'
 import { Enemy, getRandomEnemy } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { SpecialItemBase } from '../sprites/special-items/defines/_base.ts'
+import { PowerBulletItem } from '../sprites/special-items/defines/power-bullet.ts'
+import { ShotgunItem } from '../sprites/special-items/defines/shotgun.ts'
 import { SpecialItemType } from '../sprites/special-items/types.ts'
 import { getRandomItem } from '../sprites/special-items/utils.ts'
 import { WeaponBase } from '../sprites/weapon/defines/_base.ts'
+import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
-import { WeaponType, IWeapon } from '../sprites/weapon/types.ts'
+import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
 import { floor, rand } from '../utils'
 import { waveManager } from '../waves'
 
@@ -244,7 +247,7 @@ class Enemys {
         eTop < pBottom &&
         eBottom > pTop
       ) {
-        player.isDead = true
+        player.takeDamage(enemy.attack)
       }
     }
   }
@@ -898,6 +901,8 @@ class Weapons {
 
       // Also tick weapon duration when not attacking
       player.tickWeaponDuration(deltaTime)
+      // Tick invincible timer
+      player.tickInvincible(deltaTime)
 
       const weapons = player.weapons
       const weaponLength = weapons.length
@@ -1009,46 +1014,169 @@ class Weapons {
  */
 class UI {
   static printTitle (stage: Stage) {
-    stage.printText('=== Save small TV v0.4 ===', 5, 10)
+    // 左上角版本信息
+    stage.printText('Save small TV 0.4', 4, 10, 6)
   }
 
   static printScore (stage: Stage) {
-    stage.printText(`Score: ${score}, Level: ${level}`, 120, 10)
+    // 右上角游戏信息
+    const text = `Score: ${score}  Level: ${level}`
+    const textWidth = stage.measureText(text, 6)
+    stage.printText(text, stageWidth - textWidth - 4, 10, 6)
+  }
+
+  // 缓存道具实例用于获取纹理
+  static bulletIcon: Bullet = null
+  static powerBulletItemIcon: PowerBulletItem = null
+  static shotgunItemIcon: ShotgunItem = null
+
+  static getItemSprite (type: WeaponType) {
+    if (type === WeaponType.POWER_BULLET) {
+      if (!UI.powerBulletItemIcon) {
+        UI.powerBulletItemIcon = new PowerBulletItem()
+        UI.powerBulletItemIcon.updateTexture()
+      }
+      return UI.powerBulletItemIcon
+    } else if (type === WeaponType.SHOTGUN) {
+      if (!UI.shotgunItemIcon) {
+        UI.shotgunItemIcon = new ShotgunItem()
+        UI.shotgunItemIcon.updateTexture()
+      }
+      return UI.shotgunItemIcon
+    } else {
+      // 普通子弹用子弹图标
+      if (!UI.bulletIcon) {
+        UI.bulletIcon = new Bullet({ x: 0, y: 0, direction: 'R' })
+        UI.bulletIcon.updateTexture()
+      }
+      return UI.bulletIcon
+    }
   }
 
   static printWeaponInfo (stage: Stage) {
     const player = Player.instance
-    if (!player) { return }
-
-    let weaponName = 'Bullet'
-    if (player.currentWeaponType === WeaponType.POWER_BULLET) {
-      weaponName = 'Power'
-    } else if (player.currentWeaponType === WeaponType.SHOTGUN) {
-      weaponName = 'Shotgun'
+    if (!player) {
+      return
     }
 
-    const duration = player.weaponDuration > 0
-      ? ` (${Math.ceil(player.weaponDuration)}s)`
-      : ''
+    const weaponType = player.currentWeaponType
+    if (weaponType === WeaponType.BULLET) {
+      return
+    }
 
-    stage.printText(`Weapon: ${weaponName}${duration}`, 5, stageHeight - 5)
+    // 获取当前武器对应的道具图标
+    const itemSprite = UI.getItemSprite(weaponType)
+
+    // 图标尺寸（special item 是完整 8x8，保持原始大小）
+    const srcSize = 8
+    const iconSize = 10
+    const smallFontSize = 5
+    const gap = 2
+
+    // 固定总高度
+    const totalHeight = iconSize + gap + smallFontSize
+
+    // 整体位置（左下角）
+    const baseX = 4
+    const baseY = stageHeight - totalHeight - 4
+
+    // 图标位置
+    const iconX = baseX
+    const iconY = baseY
+
+    // 绘制道具图标
+    stage.context.drawImage(
+      itemSprite.offscreen.canvasElement,
+      0, 0, srcSize, srcSize,
+      iconX, iconY, iconSize, iconSize
+    )
+
+    // 如果有武器持续时间，显示倒计时
+    if (player.weaponDuration > 0) {
+      const countdown = Math.ceil(player.weaponDuration).toString()
+      const textWidth = stage.measureText(countdown, smallFontSize)
+      const textX = iconX + (iconSize - textWidth) / 2
+      const textY = iconY + iconSize + gap + smallFontSize
+      stage.printText(countdown, textX, textY, smallFontSize)
+    }
+  }
+
+  /**
+   * 绘制玩家血条
+   */
+  static printHPBar (stage: Stage) {
+    const player = Player.instance
+    if (!player) { return }
+
+    // 血条尺寸
+    const barWidth = 30
+    const barHeight = 4
+    const barX = 4
+    const barY = 18 // 在版本信息下方
+
+    // 计算血量百分比
+    const hpPercent = player.hp / player.maxHp
+
+    const ctx = stage.context
+
+    // 背景（深红色）
+    ctx.fillStyle = '#4e4a4e'
+    ctx.fillRect(barX, barY, barWidth, barHeight)
+
+    // 血条颜色（根据血量变化）
+    let barColor = '#6abe30' // 绿色 (>50%)
+    if (hpPercent <= 0.25) {
+      barColor = '#ac3232' // 红色 (<=25%)
+    } else if (hpPercent <= 0.5) {
+      barColor = '#df7126' // 橙色 (<=50%)
+    }
+
+    // 当前血量
+    ctx.fillStyle = barColor
+    ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight)
+
+    // 边框
+    ctx.strokeStyle = '#deeed6'
+    ctx.lineWidth = 1
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barWidth - 1, barHeight - 1)
+
+    // 无敌状态闪烁效果
+    if (player.isInvincible) {
+      // 每隔一段时间闪烁
+      const blink = Math.floor(player.invincibleTimer * 10) % 2 === 0
+      if (blink) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+        ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight)
+      }
+    }
   }
 
   static $printGameOver (stage: Stage) {
-    stage.printText(
-      'Game over young man !!', stageWidth / 2 - 50, stageHeight / 2 - 14
-    )
-    stage.printText(
-      `Your score is ${score}.`, stageWidth / 2 - 29, stageHeight / 2 - 2
-    )
-    stage.printText(
-      'Press enter to restart.', stageWidth / 2 - 42, stageHeight / 2 + 9
-    )
+    const fontSize = 8
+    const lineHeight = 12
+    const lines = [
+      'GAME OVER',
+      `Your score: ${score}`,
+      'Press ENTER to restart'
+    ]
+
+    // 计算总高度，垂直居中
+    const totalHeight = lines.length * lineHeight
+    const startY = (stageHeight - totalHeight) / 2 + fontSize
+
+    for (let i = 0; i < lines.length; i++) {
+      const text = lines[i]
+      const textWidth = stage.measureText(text, fontSize)
+      const x = (stageWidth - textWidth) / 2
+      const y = startY + i * lineHeight
+      stage.printText(text, x, y, fontSize)
+    }
   }
 
   static $tick (stage: Stage) {
     UI.printTitle(stage)
     UI.printScore(stage)
+    UI.printHPBar(stage)
     UI.printWeaponInfo(stage)
   }
 }

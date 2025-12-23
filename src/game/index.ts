@@ -7,14 +7,20 @@
 import { Stage } from '../core/stage'
 import { tick } from './tick'
 
-// Create new stage.
-const stage = new Stage(
-  <HTMLCanvasElement> document.getElementById('app-canvas'),
-  {
-    enableSmooth: false,
-    scale: 3
-  }
-)
+const main = async () => {
+  await document.fonts.load('8px kenpixel')
 
-stage.onTick(tick)
-stage.start()
+  // Create new stage.
+  const stage = new Stage(
+    document.getElementById('app-canvas') as HTMLCanvasElement,
+    {
+      enableSmooth: false,
+      scale: 3
+    }
+  )
+
+  stage.onTick(tick)
+  stage.start()
+}
+
+main()

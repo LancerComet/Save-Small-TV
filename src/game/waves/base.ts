@@ -4,8 +4,8 @@
  */
 
 import { Stage } from '../../core/stage'
-import { SmallTV } from '../sprites/sprites.player'
-import { Enemy } from '../sprites/sprites.enemy'
+import { SmallTV } from '../sprites/player'
+import { Enemy } from '../sprites/enemy'
 
 /**
  * 敌人类型构造函数

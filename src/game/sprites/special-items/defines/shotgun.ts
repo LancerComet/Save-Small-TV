@@ -1,19 +1,20 @@
-import { SpecialItem, ItemType } from './base'
-import { bitmapsToTextures } from '../../../core/utils'
+import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
+import { bitmapsToTextures } from '../../../../core/utils'
+import { SpecialItemType } from '../types.ts'
+import { SpecialItemBase } from './_base.ts'
 
 const WIDTH = 8
 const HEIGHT = 8
 
-const COLOR_MAP: TColorMap = {
-  '0': 'transparent',
-  '1': '#00ff00',  // 深绿
-  '2': '#66ff66',  // 中绿
-  '3': '#ccffcc',  // 浅绿
-  '4': '#ffffff'   // 高光
+const COLOR_MAP: SpriteColorMap = {
+  0: 'transparent',
+  1: '#00ff00',
+  2: '#66ff66',
+  3: '#ccffcc',
+  4: '#ffffff'
 }
 
-// 三个散开的小弹丸（扇形分布）
-const BITMAPS: TBitmaps = [
+const BITMAPS: SpriteBitmaps = [
   [
     '0', '0', '0', '0', '0', '4', '1', '0',
     '0', '0', '0', '0', '4', '2', '0', '0',
@@ -22,7 +23,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '4', '2', '0', '0',
     '0', '0', '0', '0', '0', '4', '1', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   [
     '0', '0', '0', '0', '0', '0', '4', '1',
@@ -32,25 +33,25 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '4', '2', '0',
     '0', '0', '0', '0', '0', '0', '4', '1',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-  ],
+    '0', '0', '0', '0', '0', '0', '0', '0'
+  ]
 ]
 
 /**
  * 散弹枪道具
  * 拾取后获得散弹枪武器
  */
-class ShotgunItem extends SpecialItem {
+class ShotgunItem extends SpecialItemBase {
   width = WIDTH
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
     super()
-    this.itemType = ItemType.SHOTGUN
+    this.itemType = SpecialItemType.SHOTGUN
     this.paddingX = 0
     this.paddingY = 0
-    this.TEXTURE_CHANGING_COUNTDOWN = 30  // 闪烁效果
+    this.TEXTURE_CHANGING_COUNTDOWN = 30 // 闪烁效果
   }
 }
 

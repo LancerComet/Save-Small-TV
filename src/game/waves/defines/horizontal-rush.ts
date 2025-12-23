@@ -4,15 +4,13 @@
  */
 
 import { Stage } from '../../../core/stage'
-import { SmallTV } from '../../sprites/sprites.player'
-import { Enemy, FireballEnemy } from '../../sprites/sprites.enemy'
 import { FixedBehavior } from '../../behaviors'
+import { Enemy, FireballEnemy } from '../../sprites/enemy'
+import { SmallTV } from '../../sprites/player'
 import { WaveStrategy, IWaveConfig, EnemyConstructor } from '../base'
 
 interface IHorizontalRushConfig extends IWaveConfig {
-  /** 从左侧还是右侧出现 */
   fromLeft: boolean
-  /** 敌人类型 */
   EnemyType?: EnemyConstructor
 }
 
@@ -49,8 +47,8 @@ class HorizontalRushStrategy extends WaveStrategy {
 
     // 计算起始位置
     const startX = fromLeft
-      ? bounds.left - 50    // 屏幕左侧外
-      : bounds.right + 50   // 屏幕右侧外
+      ? bounds.left - 50 // 屏幕左侧外
+      : bounds.right + 50 // 屏幕右侧外
 
     // 敌人Y轴居中对齐玩家
     const centerY = player.y + player.height / 2

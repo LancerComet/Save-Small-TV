@@ -1,27 +1,23 @@
-/**
- * Fireball Enemy - 火球敌人
- * 用于波次策略的特殊敌人
- */
-
-import { Enemy } from './base'
+import { SpriteBitmaps, SpriteColorMap } from '../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../core/utils'
+import { Enemy } from './base'
 
 const WIDTH = 16
 const HEIGHT = 16
 const HP = 30
 
 // 火焰色系
-const COLOR_MAP: TColorMap = {
-  '0': 'transparent',
-  '1': '#ff0000',  // 红色核心
-  '2': '#ff6600',  // 橙色
-  '3': '#ffcc00',  // 黄色
-  '4': '#ffffff',  // 白色高光
-  '5': '#990000'   // 深红尾焰
+const COLOR_MAP: SpriteColorMap = {
+  0: 'transparent',
+  1: '#ff0000', // 红色核心
+  2: '#ff6600', // 橙色
+  3: '#ffcc00', // 黄色
+  4: '#ffffff', // 白色高光
+  5: '#990000' // 深红尾焰
 }
 
 // 火球造型
-const BITMAPS: TBitmaps = [
+const BITMAPS: SpriteBitmaps = [
   [
     '0', '0', '0', '0', '0', '3', '3', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '3', '2', '2', '3', '0', '0', '0', '0', '0', '0', '0', '0',
@@ -38,7 +34,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '5', '5', '5', '5', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '5', '5', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '5', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   // 闪烁帧
   [
@@ -57,10 +53,13 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '1', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-  ],
+    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'
+  ]
 ]
 
+/**
+ * Fireball Enemy.
+ */
 class FireballEnemy extends Enemy {
   width = WIDTH
   height = HEIGHT
@@ -74,7 +73,7 @@ class FireballEnemy extends Enemy {
     this.speed = 2
     this.paddingX = 2
     this.paddingY = 2
-    this.TEXTURE_CHANGING_COUNTDOWN = 8  // 快速闪烁
+    this.TEXTURE_CHANGING_COUNTDOWN = 8 // 快速闪烁
     this.destroyCountdown = 0
   }
 }

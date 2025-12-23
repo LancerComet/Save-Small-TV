@@ -4,6 +4,8 @@
 
 ![Game Preview](https://img.shields.io/badge/Game-Play%20Now-brightgreen)
 
+[Play it online](https://lancercomet.github.io/Save-Small-TV/)
+
 ## 🎯 Features
 
 - **Infinite Map**: Camera follows player, enemies spawn around viewport
@@ -14,11 +16,22 @@
 
 ## 🎮 Controls
 
+### Keyboard
+
 | Key | Action |
 |-----|--------|
 | W/A/S/D | Move |
 | ↑/↓/←/→ | Shoot |
 | Enter | Start/Restart |
+
+### Gamepad 🎮
+
+| Control | Action |
+|---------|--------|
+| Left Stick | Move |
+| Right Stick | Shoot Direction |
+| Start Button | Start/Restart |
+| D-Pad | Move (Alternative) |
 
 ## 🚀 Development
 

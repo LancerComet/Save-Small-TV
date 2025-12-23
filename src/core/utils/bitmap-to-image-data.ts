@@ -1,3 +1,4 @@
+import { SpriteColorMap, SpriteBitmap } from '../sprite/types.ts'
 import { hexToRgb } from './hex-to-rgb'
 
 /**
@@ -5,11 +6,11 @@ import { hexToRgb } from './hex-to-rgb'
  *
  * @param {number} width
  * @param {number} height
- * @param {TBitmap} bitmap
- * @param {TColorMap} colorMap
+ * @param {SpriteBitmap} bitmap
+ * @param {SpriteColorMap} colorMap
  * @returns {ImageData}
  */
-function bitmapToImageData (width: number, height: number, bitmap: TBitmap, colorMap: TColorMap): ImageData {
+function bitmapToImageData (width: number, height: number, bitmap: SpriteBitmap, colorMap: SpriteColorMap): ImageData {
   const arrayBuffer = new ArrayBuffer(bitmap.length * 4)
   const uint8Arr = new Uint8ClampedArray(arrayBuffer)
 
@@ -23,7 +24,7 @@ function bitmapToImageData (width: number, height: number, bitmap: TBitmap, colo
     if (hexColor === 'transparent') {
       rgbColor = [0, 0, 0, 0]
     } else {
-      rgbColor = hexToRgb(hexColor).concat(255)  // Push alpha into rgb color array.
+      rgbColor = hexToRgb(hexColor).concat(255) // Push alpha into rgb color array.
     }
 
     uint8Arr.set(rgbColor, i * 4)

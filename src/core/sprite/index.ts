@@ -1,6 +1,5 @@
-/// <reference path="./index.d.ts" />
-
 import { Offscreen } from './offscreen'
+import { SpriteTextures } from './types.ts'
 
 /**
  * Sprite Class Definition.
@@ -13,7 +12,7 @@ class Sprite {
    * Width.
    *
    * @type {number}
-   * @memberof SpriteBase
+   * @memberof Sprite
    */
   width: number = 0
 
@@ -21,7 +20,7 @@ class Sprite {
    * Height.
    *
    * @type {number}
-   * @memberof SpriteBase
+   * @memberof Sprite
    */
   height: number = 0
 
@@ -60,16 +59,16 @@ class Sprite {
   /**
    * Textures of this sprite.
    *
-   * @type {TTextures}
-   * @memberof SpriteBase
+   * @type {SpriteTextures}
+   * @memberof Sprite
    */
-  textures: TTextures = []
+  textures: SpriteTextures = []
 
   /**
    * Axis x in Stage.
    *
    * @type {number}
-   * @memberof SpriteBase
+   * @memberof Sprite
    */
   x: number = 0
 
@@ -77,7 +76,7 @@ class Sprite {
    * Axis y in Stage.
    *
    * @type {number}
-   * @memberof SpriteBase
+   * @memberof Sprite
    */
   y: number = 0
 
@@ -141,7 +140,7 @@ class Sprite {
     // Lazy init offscreen with correct size (子类属性在父类构造函数中还未初始化)
     if (!this.offscreen || this.offscreen.canvasElement.width !== this.width) {
       this.offscreen = new Offscreen(this.width, this.height)
-      this.lastRenderedTexture = -1  // Force re-render
+      this.lastRenderedTexture = -1 // Force re-render
     }
 
     // Handle texture animation countdown

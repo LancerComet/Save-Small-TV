@@ -1,17 +1,15 @@
-import { Weapon } from './base.weapon'
-import { bitmapsToTextures } from '../../../core/utils'
+import { SpriteColorMap, SpriteBitmaps, SpriteDirection } from '../../../../core/sprite/types.ts'
+import { bitmapsToTextures } from '../../../../core/utils'
+import { IWeapon } from '../types.ts'
+import { WeaponBase } from './_base.ts'
 
-const WIDTH = 8
-const HEIGHT = 8
-const SPEED = 2
-
-const COLOR_MAP: TColorMap = {
-  '0': 'transparent',
-  '1': '#F24C14',
-  '2': '#FFCE34'
+const COLOR_MAP: SpriteColorMap = {
+  0: 'transparent',
+  1: '#F24C14',
+  2: '#FFCE34'
 }
 
-const BITMAPS: TBitmaps = [
+const BITMAPS: SpriteBitmaps = [
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
@@ -20,7 +18,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '2', '1', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
@@ -30,7 +28,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '1', '2', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
@@ -40,7 +38,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '1', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
@@ -50,21 +48,25 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '2', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-  ],
+    '0', '0', '0', '0', '0', '0', '0', '0'
+  ]
 ]
 
 /**
  * Relationship between texture and direction.
  */
 const DIRECTION_TEXTURE_MAPPING = {
-  'L': 0,
-  'R': 1,
-  'T': 2,
-  'B': 3
+  L: 0,
+  R: 1,
+  T: 2,
+  B: 3
 }
 
-class Bullet extends Weapon {
+const WIDTH = 8
+const HEIGHT = 8
+const SPEED = 2
+
+class Bullet extends WeaponBase {
   width = WIDTH
   height = HEIGHT
   attack = 10
@@ -73,13 +75,14 @@ class Bullet extends Weapon {
   /**
    * Direction of this bullet.
    *
-   * @type {TDirection}
+   * @type {SpriteDirection}
    * @memberof Bullet
    */
-  get direction (): TDirection {
+  get direction (): SpriteDirection {
     return this._direction
   }
-  set direction (direction: TDirection) {
+
+  set direction (direction: SpriteDirection) {
     this._direction = direction
     this.currentTexture = DIRECTION_TEXTURE_MAPPING[direction]
   }

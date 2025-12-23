@@ -1,22 +1,18 @@
 import { defineConfig } from 'vite'
 
-export default defineConfig({
-  base: '/Save-Small-TV/',
+export default defineConfig(context => {
+  const isDev = context.mode === 'development'
 
-  build: {
-    outDir: 'dist'
-  },
+  return {
+    base: isDev ? '/' : '/Save-Small-TV/',
 
-  server: {
-    port: 3000
-  },
+    build: {
+      outDir: 'dist'
+    },
 
-  css: {
-  },
-
-  resolve: {
-    alias: {
-      '@': '/src'
+    server: {
+      port: 3000,
+      host: '0.0.0.0'
     }
   }
 })

@@ -1,11 +1,11 @@
-  /**
+/**
  * Wave Manager - 波次管理器
  * 管理所有敌人波次策略的触发和执行
  */
 
 import { Stage } from '../../core/stage'
-import { SmallTV } from '../sprites/sprites.player'
-import { Enemy, Sprite22 } from '../sprites/sprites.enemy'
+import { Enemy, Sprite22 } from '../sprites/enemy'
+import { SmallTV } from '../sprites/player'
 import { IWaveStrategy } from './base'
 import { HorizontalRushStrategy } from './defines/horizontal-rush'
 import { VerticalRushStrategy } from './defines/vertical-rush'
@@ -53,7 +53,7 @@ class WaveManager {
       interval: 60,
       enemyCount: 3,
       spacing: 20,
-      speed: 4
+      speed: 1.5
     }))
   }
 
@@ -112,7 +112,7 @@ class WaveManager {
   tickEnemies (stage: Stage, deltaTime: number) {
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
-    const buffer = 100  // 超出屏幕多远后删除
+    const buffer = 100 // 超出屏幕多远后删除
 
     for (let i = this.waveEnemies.length - 1; i >= 0; i--) {
       const enemy = this.waveEnemies[i]

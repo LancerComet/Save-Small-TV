@@ -1,5 +1,6 @@
 import { Sprite } from '../../core/sprite'
 import { Camera } from '../../core/camera'
+import { GamepadController } from '../../core/gamepad'
 
 /**
  * Stage class.
@@ -86,6 +87,52 @@ class Stage {
     UP: false, DOWN: false, LEFT: false, RIGHT: false,
     // 功能键
     X: false, Y: false, START: false, ESC: false
+  }
+
+  // Gamepad.
+  // ==================================
+  /**
+   * Gamepad controller for handling gamepad input.
+   *
+   * @type {GamepadController}
+   * @memberof Stage
+   */
+  gamepad: GamepadController = new GamepadController()
+
+  /**
+   * Combined input state (keyboard + gamepad).
+   * Use this for game logic instead of keyPressed directly.
+   */
+  get input () {
+    const gp = this.gamepad
+    const movement = gp.getMovement()
+    const shoot = gp.getShootDirection()
+
+    return {
+      // Movement (WASD or Left Stick)
+      moveUp: this.keyPressed.W || movement.y < -0.3,
+      moveDown: this.keyPressed.S || movement.y > 0.3,
+      moveLeft: this.keyPressed.A || movement.x < -0.3,
+      moveRight: this.keyPressed.D || movement.x > 0.3,
+
+      // Shooting (Arrow keys or Right Stick)
+      shootUp: this.keyPressed.UP || shoot.up,
+      shootDown: this.keyPressed.DOWN || shoot.down,
+      shootLeft: this.keyPressed.LEFT || shoot.left,
+      shootRight: this.keyPressed.RIGHT || shoot.right,
+
+      // Analog movement values (for smooth gamepad control)
+      analogMoveX: movement.x,
+      analogMoveY: movement.y,
+      analogShootX: gp.state.rightStickX,
+      analogShootY: gp.state.rightStickY,
+
+      // Action buttons
+      start: this.keyPressed.START || gp.state.buttonStart,
+      actionX: this.keyPressed.X || gp.state.buttonA,
+      actionY: this.keyPressed.Y || gp.state.buttonB,
+      esc: this.keyPressed.ESC || gp.state.buttonSelect
+    }
   }
 
   /**
@@ -309,6 +356,9 @@ class Stage {
     if (this.deltaTime > 0.1) {
       this.deltaTime = 0.1
     }
+
+    // Poll gamepad state every frame
+    this.gamepad.poll()
 
     this.clearStage()
     this.execTickCallback()

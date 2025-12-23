@@ -1,20 +1,16 @@
-import { Weapon } from './base.weapon'
-import { bitmapsToTextures } from '../../../core/utils'
+import { SpriteColorMap, SpriteBitmaps, SpriteDirection } from '../../../../core/sprite/types.ts'
+import { bitmapsToTextures } from '../../../../core/utils'
+import { IWeapon } from '../types.ts'
+import { WeaponBase } from './_base.ts'
 
-const WIDTH = 8
-const HEIGHT = 8
-const SPEED = 3
-const MAX_DISTANCE = 75  // 射程 (+50%)
-const SPREAD_ANGLE = 22.5  // 散射角度（度）
-
-const COLOR_MAP: TColorMap = {
-  '0': 'transparent',
-  '1': '#00ff00',
-  '2': '#66ff66',
-  '3': '#ccffcc'
+const COLOR_MAP: SpriteColorMap = {
+  0: 'transparent',
+  1: '#00ff00',
+  2: '#66ff66',
+  3: '#ccffcc'
 }
 
-const BITMAPS: TBitmaps = [
+const BITMAPS: SpriteBitmaps = [
   // Left
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
@@ -24,7 +20,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   // Right
   [
@@ -35,7 +31,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   // Top
   [
@@ -46,7 +42,7 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '2', '0', '0', '0', '0',
     '0', '0', '0', '1', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '0', '0', '0', '0', '0'
   ],
   // Bottom
   [
@@ -57,32 +53,38 @@ const BITMAPS: TBitmaps = [
     '0', '0', '0', '3', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-  ],
+    '0', '0', '0', '0', '0', '0', '0', '0'
+  ]
 ]
 
 const DIRECTION_TEXTURE_MAPPING = {
-  'L': 0,
-  'R': 1,
-  'T': 2,
-  'B': 3
+  L: 0,
+  R: 1,
+  T: 2,
+  B: 3
 }
 
 // 方向对应的基础角度（弧度）
-const DIRECTION_BASE_ANGLE: Record<TDirection, number> = {
-  'R': 0,                    // 0°
-  'B': Math.PI / 2,          // 90°
-  'L': Math.PI,              // 180°
-  'T': -Math.PI / 2          // -90° (270°)
+const DIRECTION_BASE_ANGLE: Record<SpriteDirection, number> = {
+  R: 0, // 0°
+  B: Math.PI / 2, // 90°
+  L: Math.PI, // 180°
+  T: -Math.PI / 2 // -90° (270°)
 }
+
+const WIDTH = 8
+const HEIGHT = 8
+const SPEED = 3
+const MAX_DISTANCE = 75 // 射程 (+50%)
+const SPREAD_ANGLE = 22.5 // 散射角度（度）
 
 /**
  * 散弹的单个弹丸 - 支持角度散射
  */
-class ShotgunPellet extends Weapon {
+class ShotgunPellet extends WeaponBase {
   width = WIDTH
   height = HEIGHT
-  attack = 5  // 单颗攻击力较低
+  attack = 10
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
   maxDistance = MAX_DISTANCE
   startX = 0
@@ -90,16 +92,33 @@ class ShotgunPellet extends Weapon {
 
   // 散射角度（弧度）
   angle = 0
+
   // 速度分量
   velocityX = 0
   velocityY = 0
 
-  get direction (): TDirection {
+  get direction (): SpriteDirection {
     return this._direction
   }
-  set direction (direction: TDirection) {
+
+  set direction (direction: SpriteDirection) {
     this._direction = direction
     this.currentTexture = DIRECTION_TEXTURE_MAPPING[direction]
+  }
+
+  /**
+   * 按角度移动弹丸
+   */
+  move (deltaSpeed: number) {
+    this.x += this.velocityX * deltaSpeed
+    this.y += this.velocityY * deltaSpeed
+  }
+
+  isOutOfRange (): boolean {
+    const dx = this.x - this.startX
+    const dy = this.y - this.startY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    return distance > this.maxDistance
   }
 
   constructor (param: IWeapon & { angle?: number }) {
@@ -124,21 +143,6 @@ class ShotgunPellet extends Weapon {
 
     this.TEXTURE_CHANGING_COUNTDOWN = false
   }
-
-  /**
-   * 按角度移动弹丸
-   */
-  move (deltaSpeed: number) {
-    this.x += this.velocityX * deltaSpeed
-    this.y += this.velocityY * deltaSpeed
-  }
-
-  isOutOfRange (): boolean {
-    const dx = this.x - this.startX
-    const dy = this.y - this.startY
-    const distance = Math.sqrt(dx * dx + dy * dy)
-    return distance > this.maxDistance
-  }
 }
 
 /**
@@ -148,8 +152,10 @@ class ShotgunPellet extends Weapon {
 class Shotgun {
   /**
    * 创建散弹（返回多个弹丸，扇形散射）
+   * @param param 基础参数
+   * @param baseAngle 可选的基础角度（弧度），用于无极方向射击
    */
-  static createPellets (param: IWeapon): ShotgunPellet[] {
+  static createPellets (param: IWeapon, baseAngle?: number): ShotgunPellet[] {
     const pellets: ShotgunPellet[] = []
     // 散射角度：-22.5°, 0°, +22.5° (转换为弧度)
     const spreadAngles = [
@@ -165,6 +171,13 @@ class Shotgun {
         direction: param.direction,
         angle: angleOffset
       })
+
+      // 如果有自定义的基础角度（无极方向射击），覆盖默认角度
+      if (baseAngle !== undefined) {
+        pellet.angle = baseAngle + angleOffset
+        pellet.velocityX = Math.cos(pellet.angle)
+        pellet.velocityY = Math.sin(pellet.angle)
+      }
 
       pellets.push(pellet)
     }

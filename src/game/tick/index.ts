@@ -5,34 +5,35 @@
 
 import { Stage } from '../../core/stage'
 
-import { Enemy, getRandomEnemy } from '../sprites/sprites.enemy'
-import { SmallTV } from '../sprites/sprites.player'
-import { Bullet, Weapon, WeaponType, Shotgun, PowerBullet, ShotgunPellet } from '../sprites/sprites.weapon'
-import { SpecialItem, ItemType, getRandomItem } from '../sprites/sprites.special-items'
-import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/sprites.effects'
 import { spaceBackground } from '../background'
-import { waveManager } from '../waves'
-
-import { floor, rand } from '../utils'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
+import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/effects'
+import { Enemy, getRandomEnemy } from '../sprites/enemy'
+import { SmallTV } from '../sprites/player'
+import { SpecialItemBase } from '../sprites/special-items/defines/_base.ts'
+import { SpecialItemType } from '../sprites/special-items/types.ts'
+import { getRandomItem } from '../sprites/special-items/utils.ts'
+import { WeaponBase } from '../sprites/weapon/defines/_base.ts'
+import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
+import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
+import { WeaponType, IWeapon } from '../sprites/weapon/types.ts'
+import { floor, rand } from '../utils'
+import { waveManager } from '../waves'
 
 // Time constants (in seconds)
 const MAX_SPECIAL_ITEMS = 5
-const GEN_SPECIAL_INTERVAL = 30  // seconds
-const MAX_ENEMYS = 10
-const GEN_ENEMY_INTERVAL = 0.5  // seconds - 更快生成
-const ENEMIES_PER_SPAWN = 3  // 每次生成敌人数量
-const GEN_WEAPON_INTERVAL = 0.083  // ~5 frames at 60fps = 5/60 seconds
-const ITEM_DROP_CHANCE = 0.3  // 30% chance to drop item
-const WEAPON_DURATION = 10  // seconds
-const ITEM_LIFETIME = 10  // seconds
+const GEN_ENEMY_INTERVAL = 0.5 // seconds - 更快生成
+const ENEMIES_PER_SPAWN = 3 // 每次生成敌人数量
+const GEN_WEAPON_INTERVAL = 0.083 // ~5 frames at 60fps = 5/60 seconds
+const ITEM_DROP_CHANCE = 0.3 // 30% chance to drop item
+const WEAPON_DURATION = 10 // seconds
 
 // Speed multiplier for 60fps baseline
 const BASE_FPS = 60
 
 const DEFAULT_LEVEL = 1
 const DEFAULT_SCORE = 0
-const SCORE_PER_LEVEL = 100  // 每100分升一级
+const SCORE_PER_LEVEL = 100 // 每100分升一级
 
 let score = DEFAULT_SCORE
 let level = DEFAULT_LEVEL
@@ -60,10 +61,10 @@ function tick (stage: Stage, deltaTime: number) {
   spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
 
   Enemys.$tick(stage, deltaTime)
-  Waves.$tick(stage, deltaTime)  // 波次系统
+  Waves.$tick(stage, deltaTime) // 波次系统
   Effects.$tick(stage, deltaTime)
   SpecialItems.$tick(stage, deltaTime)
-  Player1.$tick(stage, deltaTime)
+  Player.$tick(stage, deltaTime)
   Weapons.$tick(stage, deltaTime)
   UI.$tick(stage)
   Game.$tick()
@@ -102,8 +103,8 @@ class Init {
    * @static
    * @memberof Init
    */
-  static player1 () {
-    Player1.$reset()
+  static initPlayer () {
+    Player.$reset()
   }
 
   /**
@@ -120,7 +121,7 @@ class Init {
     }
 
     // Init player.
-    !Player1.player && Init.player1()
+    !Player.instance && Init.initPlayer()
   }
 }
 
@@ -181,26 +182,26 @@ class Enemys {
   static createStartPosition (stage: Stage) {
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
-    const spawnOffset = 30  // 在视口外多远生成
+    const spawnOffset = 30 // 在视口外多远生成
 
     // 随机选择从哪个方向生成（上、下、左、右）
     const side = floor(rand(4))
     let x: number, y: number
 
     switch (side) {
-      case 0:  // 上方
+      case 0: // 上方
         x = bounds.left + rand(stageWidth)
         y = bounds.top - spawnOffset
         break
-      case 1:  // 下方
+      case 1: // 下方
         x = bounds.left + rand(stageWidth)
         y = bounds.bottom + spawnOffset
         break
-      case 2:  // 左侧
+      case 2: // 左侧
         x = bounds.left - spawnOffset
         y = bounds.top + rand(stageHeight)
         break
-      case 3:  // 右侧
+      case 3: // 右侧
       default:
         x = bounds.right + spawnOffset
         y = bounds.top + rand(stageHeight)
@@ -263,7 +264,7 @@ class Enemys {
         Effects.spawnExplosion(
           enemy.x + enemy.width / 2,
           enemy.y + enemy.height / 2,
-          20  // 爆炸粒子数量
+          20 // 爆炸粒子数量
         )
         enemy.hasSpawnedBlood = true
       }
@@ -294,7 +295,7 @@ class Enemys {
     }
 
     // 敌人通过行为系统移动（追踪玩家）
-    const player = Player1.player
+    const player = Player.instance
     if (!player) { return }
 
     enemy.move(player, deltaTime)
@@ -309,7 +310,7 @@ class Enemys {
    * @memberof Enemy
    */
   static draw (stage: Stage, enemy: Enemy) {
-    enemy.updateTexture()  // Update texture animation
+    enemy.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(enemy.x, enemy.y)
     stage.context.drawImage(
       enemy.offscreen.canvasElement,
@@ -386,7 +387,7 @@ class Waves {
   /**
    * 检测武器与波次敌人的碰撞
    */
-  static checkWeaponHit (weapon: Weapon): boolean {
+  static checkWeaponHit (weapon: WeaponBase): boolean {
     const weaponPdX = weapon.paddingX
     const weaponPdY = weapon.paddingY
 
@@ -415,18 +416,18 @@ class Waves {
             enemy.y + enemy.height / 2,
             12
           )
-          score += 20  // 波次敌人分数更高
+          score += 20 // 波次敌人分数更高
           waveManager.waveEnemies.splice(i, 1)
         }
 
-        return true  // 武器命中
+        return true // 武器命中
       }
     }
     return false
   }
 
   static $tick (stage: Stage, deltaTime: number) {
-    const player = Player1.player
+    const player = Player.instance
     if (!player) return
 
     // 更新波次计时器
@@ -549,7 +550,7 @@ class Effects {
  * @class SpecialItems
  */
 class SpecialItems {
-  static items: SpecialItem[] = []
+  static items: SpecialItemBase[] = []
 
   /**
    * Drop an item at specified position.
@@ -572,10 +573,10 @@ class SpecialItems {
    * Check if player picks up an item.
    *
    * @static
-   * @param {SpecialItem} item
+   * @param {SpecialItemBase} item
    * @memberof SpecialItems
    */
-  static detectPickup (item: SpecialItem) {
+  static detectPickup (item: SpecialItemBase) {
     if (item.isPickedUp) { return }
 
     const startX = item.x
@@ -608,15 +609,15 @@ class SpecialItems {
    *
    * @static
    * @param {SmallTV} player
-   * @param {SpecialItem} item
+   * @param {SpecialItemBase} item
    * @memberof SpecialItems
    */
-  static applyItemEffect (player: SmallTV, item: SpecialItem) {
+  static applyItemEffect (player: SmallTV, item: SpecialItemBase) {
     switch (item.itemType) {
-      case ItemType.POWER_BULLET:
+      case SpecialItemType.POWER_BULLET:
         player.switchWeapon(WeaponType.POWER_BULLET, WEAPON_DURATION, true)
         break
-      case ItemType.SHOTGUN:
+      case SpecialItemType.SHOTGUN:
         player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION, true)
         break
       default:
@@ -628,11 +629,11 @@ class SpecialItems {
    * Update item lifetime.
    *
    * @static
-   * @param {SpecialItem} item
+   * @param {SpecialItemBase} item
    * @param {number} deltaTime
    * @memberof SpecialItems
    */
-  static updateLifetime (item: SpecialItem, deltaTime: number) {
+  static updateLifetime (item: SpecialItemBase, deltaTime: number) {
     if (item.isPickedUp) {
       // Remove picked up items
       SpecialItems.items.splice(SpecialItems.items.indexOf(item), 1)
@@ -651,11 +652,11 @@ class SpecialItems {
    *
    * @static
    * @param {Stage} stage
-   * @param {SpecialItem} item
+   * @param {SpecialItemBase} item
    * @memberof SpecialItems
    */
-  static draw (stage: Stage, item: SpecialItem) {
-    item.updateTexture()  // Update texture animation
+  static draw (stage: Stage, item: SpecialItemBase) {
+    item.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(item.x, item.y)
     stage.context.drawImage(
       item.offscreen.canvasElement,
@@ -699,66 +700,99 @@ class SpecialItems {
 }
 
 /**
- * Player 1.
+ * Player manager.
+ * Handles player instance and controls.
  *
- * @class Player1
+ * @class Player
  */
 class Player {
+  static instance: SmallTV = null
+
   static get allPlayers () {
-    return [
-      Player1.player
-    ]
+    return [Player.instance]
   }
 
-  static weapons: Weapon[] = []
+  static keyControl (stage: Stage) {
+    const player = Player.instance
+    const input = stage.input
 
-  static keyControl (stage: Stage, player: SmallTV) {
-    const keyPressed = stage.keyPressed
-
-    // WASD 控制移动
-    if (keyPressed.A) {
+    // WASD 或左摇杆控制移动
+    if (input.moveLeft) {
       player.dirX = 'L'
-    } else if (keyPressed.D) {
+    } else if (input.moveRight) {
       player.dirX = 'R'
     } else {
       player.dirX = null
     }
 
-    if (keyPressed.W) {
+    if (input.moveUp) {
       player.dirY = 'T'
-    } else if (keyPressed.S) {
+    } else if (input.moveDown) {
       player.dirY = 'B'
     } else {
       player.dirY = null
     }
 
-    // 箭头键控制发射方向，按下即发射
-    if (keyPressed.LEFT) {
-      player.weaponDirection = 'L'
+    // 保存模拟量用于平滑移动（手柄摇杆）
+    player.analogMoveX = input.analogMoveX
+    player.analogMoveY = input.analogMoveY
+
+    // 检测右摇杆是否有输入（无极方向射击）
+    const rightStickX = input.analogShootX
+    const rightStickY = input.analogShootY
+    const rightStickMagnitude = Math.sqrt(rightStickX * rightStickX + rightStickY * rightStickY)
+
+    if (rightStickMagnitude > 0.3) {
+      // 使用右摇杆的无极方向射击
+      player.shootAngle = Math.atan2(rightStickY, rightStickX)
+      player.useAnalogShooting = true
       player.attacking = true
-    } else if (keyPressed.RIGHT) {
-      player.weaponDirection = 'R'
-      player.attacking = true
-    } else if (keyPressed.UP) {
-      player.weaponDirection = 'T'
-      player.attacking = true
-    } else if (keyPressed.DOWN) {
-      player.weaponDirection = 'B'
+
+      // 同时设置一个大致方向用于显示（四方向纹理）
+      if (Math.abs(rightStickX) > Math.abs(rightStickY)) {
+        player.weaponDirection = rightStickX > 0 ? 'R' : 'L'
+      } else {
+        player.weaponDirection = rightStickY > 0 ? 'B' : 'T'
+      }
+    } else if (input.shootLeft || input.shootRight || input.shootUp || input.shootDown) {
+      // 键盘四方向射击
+      player.useAnalogShooting = false
+      player.shootAngle = null
+
+      if (input.shootLeft) {
+        player.weaponDirection = 'L'
+      } else if (input.shootRight) {
+        player.weaponDirection = 'R'
+      } else if (input.shootUp) {
+        player.weaponDirection = 'T'
+      } else if (input.shootDown) {
+        player.weaponDirection = 'B'
+      }
       player.attacking = true
     } else {
       player.attacking = false
+      player.useAnalogShooting = false
     }
   }
 
-  static move (stage: Stage, player: SmallTV, deltaTime: number) {
+  static move (deltaTime: number) {
+    const player = Player.instance
     const speed = player.speed * BASE_FPS * deltaTime
-    if (player.dirX === 'L') { player.x -= speed }
-    if (player.dirX === 'R') { player.x += speed }
-    if (player.dirY === 'T') { player.y -= speed }
-    if (player.dirY === 'B') { player.y += speed }
+
+    // 如果有手柄模拟量输入，使用模拟量进行平滑移动
+    if (player.analogMoveX !== 0 || player.analogMoveY !== 0) {
+      player.x += player.analogMoveX * speed
+      player.y += player.analogMoveY * speed
+    } else {
+      // 键盘输入使用方向
+      if (player.dirX === 'L') { player.x -= speed }
+      if (player.dirX === 'R') { player.x += speed }
+      if (player.dirY === 'T') { player.y -= speed }
+      if (player.dirY === 'B') { player.y += speed }
+    }
   }
 
-  static positionLimit (player: SmallTV) {
+  static positionLimit () {
     // 无缝地图：移除边界限制，玩家可以自由移动
     // 如需世界边界，可在此添加
   }
@@ -768,48 +802,35 @@ class Player {
    *
    * @static
    * @param {Stage} stage
-   * @param {SmallTV} player
    * @memberof Player
    */
-  static updateCamera (stage: Stage, player: SmallTV) {
+  static updateCamera (stage: Stage) {
+    const player = Player.instance
     stage.camera.follow(player.x, player.y, player.width, player.height)
   }
 
-  static draw (stage: Stage, player: SmallTV) {
-    player.updateTexture()  // Update texture animation
+  static draw (stage: Stage) {
+    const player = Player.instance
+    player.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(player.x, player.y)
     stage.context.drawImage(
       player.offscreen.canvasElement, screenX, screenY
     )
   }
 
-  static $tick (stage: Stage, player: SmallTV, deltaTime: number) {
-    Player.keyControl(stage, player)
-    Player.move(stage, player, deltaTime)
-    Player.positionLimit(player)
-    Player.updateCamera(stage, player)  // 摄像机跟随玩家
-    Player.draw(stage, player)
-  }
-}
-
-/**
- * Player 1 Class.
- *
- * @class Player1
- */
-class Player1 {
-  static player: SmallTV = null
-
   static $tick (stage: Stage, deltaTime: number) {
-    Player.$tick(stage, Player1.player, deltaTime)
+    Player.keyControl(stage)
+    Player.move(deltaTime)
+    Player.positionLimit()
+    Player.updateCamera(stage) // 摄像机跟随玩家
+    Player.draw(stage)
   }
 
   static $reset () {
-    const player1 = new SmallTV()
-    player1.x = stageWidth / 2 - player1.width / 2
-    player1.y = stageHeight / 2 - player1.height / 2
-
-    Player1.player = player1
+    const player = new SmallTV()
+    player.x = stageWidth / 2 - player.width / 2
+    player.y = stageHeight / 2 - player.height / 2
+    Player.instance = player
   }
 }
 
@@ -823,7 +844,7 @@ class Weapons {
 
   static get allWeapons () {
     return [
-      Player1.player.weapons
+      Player.instance.weapons
     ]
   }
 
@@ -847,16 +868,22 @@ class Weapons {
           direction: player.weaponDirection,
           x: player.x,
           y: player.y
-        })
+        }, player.useAnalogShooting ? player.shootAngle : undefined)
         player.weapons.push(...pellets)
       } else {
         // Normal or Power bullet
         const CurrentWeapon = player.currentWeaponClass
-        const weapon: Weapon = new CurrentWeapon(<IWeapon> {
+        const weapon: WeaponBase = new CurrentWeapon(<IWeapon> {
           direction: player.weaponDirection,
           x: player.x,
           y: player.y
         })
+
+        // 如果是无极方向射击，设置角度
+        if (player.useAnalogShooting && player.shootAngle !== null) {
+          weapon.setAngle(player.shootAngle)
+        }
+
         player.weapons.push(weapon)
       }
     }
@@ -887,10 +914,14 @@ class Weapons {
         const speed = weapon.speed * BASE_FPS * deltaTime
         const direction = weapon.direction
 
-        // 散弹使用角度移动
-        if (weapon instanceof ShotgunPellet) {
+        // 如果武器使用角度移动（无极方向射击）
+        if (weapon.useAngleMovement) {
+          weapon.moveByAngle(speed)
+        } else if (weapon instanceof ShotgunPellet) {
+          // 散弹使用角度移动
           weapon.move(speed)
         } else {
+          // 四方向移动
           if (direction === 'L') { weapon.x -= speed }
           if (direction === 'R') { weapon.x += speed }
           if (direction === 'T') { weapon.y -= speed }
@@ -934,7 +965,7 @@ class Weapons {
               Effects.spawnBlood(
                 weapon.x,
                 weapon.y,
-                6  // 较少的血液粒子
+                6 // 较少的血液粒子
               )
 
               weapons.splice(j, 1)
@@ -952,7 +983,7 @@ class Weapons {
           continue
         }
 
-        weapon.updateTexture()  // Update texture animation
+        weapon.updateTexture() // Update texture animation
         const [screenX, screenY] = stage.camera.toScreen(weapon.x, weapon.y)
         stage.context.drawImage(
           weapon.offscreen.canvasElement, screenX, screenY
@@ -986,7 +1017,7 @@ class UI {
   }
 
   static printWeaponInfo (stage: Stage) {
-    const player = Player1.player
+    const player = Player.instance
     if (!player) { return }
 
     let weaponName = 'Bullet'
@@ -1037,7 +1068,7 @@ class Game {
   }
 
   static waitRestart (stage: Stage) {
-    if (stage.keyPressed.START) {
+    if (stage.input.start) {
       Game.$restartGame()
     }
   }
@@ -1051,7 +1082,7 @@ class Game {
     Weapons.$reset()
     SpecialItems.$reset()
     Effects.$reset()
-    Player1.$reset()
+    Player.$reset()
   }
 
   static $gameInWaiting (stage: Stage) {
@@ -1062,17 +1093,4 @@ class Game {
   static $tick () {
     Game.detectGameOver()
   }
-}
-
-function randomX () {
-  return [-20, stageWidth + 20][floor(rand(2))]
-}
-
-function randomY () {
-  return [-20, stageHeight + 20][floor(rand(2))]
-}
-
-function isOutOfStage (x: number, y: number, width: number, height: number) {
-  return (x >= stageWidth + width || x <= 0 - width) ||
-    (y >= stageHeight + height || y <= 0 - height)
 }

@@ -4,15 +4,13 @@
  */
 
 import { Stage } from '../../../core/stage'
-import { SmallTV } from '../../sprites/sprites.player'
-import { Enemy, FireballEnemy } from '../../sprites/sprites.enemy'
 import { FixedBehavior } from '../../behaviors'
+import { Enemy, FireballEnemy } from '../../sprites/enemy'
+import { SmallTV } from '../../sprites/player'
 import { WaveStrategy, IWaveConfig, EnemyConstructor } from '../base'
 
 interface IVerticalRushConfig extends IWaveConfig {
-  /** 从上方还是下方出现 */
   fromTop: boolean
-  /** 敌人类型 */
   EnemyType?: EnemyConstructor
 }
 
@@ -49,8 +47,8 @@ class VerticalRushStrategy extends WaveStrategy {
 
     // 计算起始位置
     const startY = fromTop
-      ? bounds.top - 50     // 屏幕上方外
-      : bounds.bottom + 50  // 屏幕下方外
+      ? bounds.top - 50 // 屏幕上方外
+      : bounds.bottom + 50 // 屏幕下方外
 
     // 敌人X轴居中对齐玩家
     const centerX = player.x + player.width / 2

@@ -1,6 +1,6 @@
 import * as weapon from '../sprites.weapon'
 import { Sprite } from '../../../core/sprite'
-import { Weapon } from '../sprites.weapon'
+import { Weapon, WeaponType } from '../sprites.weapon'
 import { bitmapsToTextures } from '../../../core/utils'
 
 const WIDTH = 8
@@ -72,6 +72,23 @@ class SmallTV extends Sprite {
   currentWeaponClass = null
 
   /**
+   * Current weapon type.
+   *
+   * @type {WeaponType}
+   * @memberof SmallTV
+   */
+  currentWeaponType: WeaponType = WeaponType.BULLET
+
+  /**
+   * Weapon duration countdown (for special weapons).
+   * When this reaches 0, weapon reverts to default.
+   *
+   * @type {number}
+   * @memberof SmallTV
+   */
+  weaponDuration: number = 0
+
+  /**
    * Attacking status.
    *
    * @type {boolean}
@@ -87,14 +104,54 @@ class SmallTV extends Sprite {
    */
   isDead: boolean = false
 
+  /**
+   * Switch to a new weapon type.
+   *
+   * @param {WeaponType} type
+   * @param {number} duration - Duration in seconds (0 = permanent)
+   * @memberof SmallTV
+   */
+  switchWeapon (type: WeaponType, duration: number = 0) {
+    this.currentWeaponType = type
+    this.weaponDuration = duration
+
+    switch (type) {
+      case WeaponType.POWER_BULLET:
+        this.currentWeaponClass = weapon.PowerBullet
+        break
+      case WeaponType.SHOTGUN:
+        this.currentWeaponClass = null  // Shotgun handled specially
+        break
+      case WeaponType.BULLET:
+      default:
+        this.currentWeaponClass = weapon.Bullet
+        break
+    }
+  }
+
+  /**
+   * Tick weapon duration and revert to default if expired.
+   *
+   * @param {number} deltaTime - Time elapsed in seconds
+   * @memberof SmallTV
+   */
+  tickWeaponDuration (deltaTime: number) {
+    if (this.weaponDuration > 0) {
+      this.weaponDuration -= deltaTime
+      if (this.weaponDuration <= 0) {
+        this.switchWeapon(WeaponType.BULLET)
+      }
+    }
+  }
+
   constructor () {
     super()
     this.x = 0
     this.y = 0
     this.hp = HP
     this.speed = 1
-    this.paddingX = 0
-    this.paddingY = 0
+    this.paddingX = 1  // 缩小左右碰撞区域
+    this.paddingY = 2  // 顶部天线不算碰撞区域
     this.isDead = false
 
     // Unique props of player type.
@@ -102,6 +159,8 @@ class SmallTV extends Sprite {
     this.weaponDirection = 'L'
     this.weaponCountdown = 0
     this.currentWeaponClass = weapon.Bullet
+    this.currentWeaponType = WeaponType.BULLET
+    this.weaponDuration = 0
 
     this.TEXTURE_CHANGING_COUNTDOWN = false
   }

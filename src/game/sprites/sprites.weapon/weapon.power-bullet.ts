@@ -4,51 +4,57 @@ import { bitmapsToTextures } from '../../../core/utils'
 const WIDTH = 8
 const HEIGHT = 8
 const SPEED = 2
+const MAX_DISTANCE = 120  // 射程限制 (+50%)
 
 const COLOR_MAP: TColorMap = {
   '0': 'transparent',
-  '1': '#F24C14',
-  '2': '#FFCE34'
+  '1': '#ff0000',
+  '2': '#ff6600',
+  '3': '#ffcc00'
 }
 
 const BITMAPS: TBitmaps = [
+  // Left
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '2', '1', '0', '0', '0',
+    '0', '0', '3', '2', '1', '1', '0', '0',
+    '0', '0', '3', '2', '1', '1', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
   ],
+  // Right
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '1', '2', '0', '0', '0',
+    '0', '0', '1', '1', '2', '3', '0', '0',
+    '0', '0', '1', '1', '2', '3', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
   ],
+  // Top
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '2', '0', '0', '0',
-    '0', '0', '0', '0', '1', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '3', '3', '0', '0', '0',
+    '0', '0', '0', '2', '2', '0', '0', '0',
+    '0', '0', '0', '1', '1', '0', '0', '0',
+    '0', '0', '0', '1', '1', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
   ],
+  // Bottom
   [
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '1', '0', '0', '0',
-    '0', '0', '0', '0', '2', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
+    '0', '0', '0', '1', '1', '0', '0', '0',
+    '0', '0', '0', '1', '1', '0', '0', '0',
+    '0', '0', '0', '2', '2', '0', '0', '0',
+    '0', '0', '0', '3', '3', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0', '0', '0',
   ],
@@ -64,18 +70,20 @@ const DIRECTION_TEXTURE_MAPPING = {
   'B': 3
 }
 
-class Bullet extends Weapon {
+/**
+ * PowerBullet - 强力子弹
+ * 攻击力更高，但射程较短
+ */
+class PowerBullet extends Weapon {
   width = WIDTH
   height = HEIGHT
-  attack = 10
+  attack = 30  // 攻击力是普通子弹的3倍
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+  maxDistance = MAX_DISTANCE
+  traveledDistance = 0
+  startX = 0
+  startY = 0
 
-  /**
-   * Direction of this bullet.
-   *
-   * @type {TDirection}
-   * @memberof Bullet
-   */
   get direction (): TDirection {
     return this._direction
   }
@@ -89,15 +97,26 @@ class Bullet extends Weapon {
 
     this.x = param.x
     this.y = param.y
+    this.startX = param.x
+    this.startY = param.y
     this.speed = SPEED
-    this.paddingX = 3
-    this.paddingY = 3
+    this.paddingX = 2
+    this.paddingY = 2
     this.direction = param.direction
 
     this.TEXTURE_CHANGING_COUNTDOWN = false
   }
+
+  /**
+   * 检查是否超出射程
+   */
+  isOutOfRange (): boolean {
+    const dx = Math.abs(this.x - this.startX)
+    const dy = Math.abs(this.y - this.startY)
+    return Math.max(dx, dy) > this.maxDistance
+  }
 }
 
 export {
-  Bullet
+  PowerBullet
 }

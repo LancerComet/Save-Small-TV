@@ -178,7 +178,7 @@ class Stage {
    * @private
    * @memberof Stage
    */
-  private tickCallbacks: Array<(stage: Stage) => void> = []
+  private tickCallbacks: Array<(stage: Stage, deltaTime: number) => void> = []
 
   /**
    * Execute ticking callbacks.
@@ -188,7 +188,7 @@ class Stage {
    */
   private execTickCallback () {
     for (let i = 0, length = this.tickCallbacks.length; i < length; i++) {
-      this.tickCallbacks[i](this)
+      this.tickCallbacks[i](this, this.deltaTime)
     }
   }
 
@@ -198,7 +198,7 @@ class Stage {
    * @param {Function} callback
    * @memberof Stage
    */
-  onTick (callback: (stage: Stage) => void) {
+  onTick (callback: (stage: Stage, deltaTime: number) => void) {
     if (this.tickCallbacks.indexOf(callback) < 0 && typeof callback === 'function') {
       this.tickCallbacks.push(callback)
     }
@@ -207,6 +207,19 @@ class Stage {
   // Tick controlling.
   // ==================================
   private rafID: number = null
+  private lastTime: number = 0
+
+  /**
+   * Delta time in seconds since last frame.
+   * Use this to make game speed independent of frame rate.
+   */
+  deltaTime: number = 0
+
+  /**
+   * Target frame rate (used for calculating time scale).
+   * 60 FPS is the baseline.
+   */
+  private readonly TARGET_FPS = 60
 
   /**
    * Start to render stage.
@@ -215,7 +228,8 @@ class Stage {
    * @memberof Stage
    */
   start () {
-    this.tick()
+    this.lastTime = performance.now()
+    this.tick(this.lastTime)
   }
 
   /**
@@ -233,7 +247,17 @@ class Stage {
    * @private
    * @memberof Stage
    */
-  private tick () {
+  private tick (currentTime: number) {
+    // Calculate delta time in seconds
+    const deltaMs = currentTime - this.lastTime
+    this.deltaTime = deltaMs / 1000
+    this.lastTime = currentTime
+
+    // Clamp deltaTime to prevent huge jumps (e.g., when tab is inactive)
+    if (this.deltaTime > 0.1) {
+      this.deltaTime = 0.1
+    }
+
     this.clearStage()
     this.execTickCallback()
     this.rafID = requestAnimationFrame(this.tick.bind(this))

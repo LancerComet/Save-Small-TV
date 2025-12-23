@@ -17,6 +17,16 @@ class Enemy extends Sprite {
    */
   destroyCountdown: number = 0
 
+  /**
+   * Whether this enemy has already dropped an item.
+   */
+  hasDroppedItem: boolean = false
+
+  /**
+   * Whether blood effect has been spawned for this enemy.
+   */
+  hasSpawnedBlood: boolean = false
+
   constructor () {
     super()
   }

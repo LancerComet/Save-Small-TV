@@ -1,0 +1,58 @@
+import { SpecialItem, ItemType } from './base'
+import { bitmapsToTextures } from '../../../core/utils'
+
+const WIDTH = 8
+const HEIGHT = 8
+
+const COLOR_MAP: TColorMap = {
+  '0': 'transparent',
+  '1': '#00ff00',
+  '2': '#66ff66',
+  '3': '#ccffcc',
+  '4': '#ffffff'
+}
+
+const BITMAPS: TBitmaps = [
+  [
+    '0', '4', '0', '4', '4', '0', '4', '0',
+    '4', '3', '4', '3', '3', '4', '3', '4',
+    '0', '4', '3', '2', '2', '3', '4', '0',
+    '4', '3', '2', '1', '1', '2', '3', '4',
+    '4', '3', '2', '1', '1', '2', '3', '4',
+    '0', '4', '3', '2', '2', '3', '4', '0',
+    '4', '3', '4', '3', '3', '4', '3', '4',
+    '0', '4', '0', '4', '4', '0', '4', '0',
+  ],
+  [
+    '4', '0', '4', '0', '0', '4', '0', '4',
+    '0', '4', '3', '3', '3', '3', '4', '0',
+    '4', '3', '2', '2', '2', '2', '3', '4',
+    '0', '3', '2', '1', '1', '2', '3', '0',
+    '0', '3', '2', '1', '1', '2', '3', '0',
+    '4', '3', '2', '2', '2', '2', '3', '4',
+    '0', '4', '3', '3', '3', '3', '4', '0',
+    '4', '0', '4', '0', '0', '4', '0', '4',
+  ],
+]
+
+/**
+ * 散弹枪道具
+ * 拾取后获得散弹枪武器
+ */
+class ShotgunItem extends SpecialItem {
+  width = WIDTH
+  height = HEIGHT
+  textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+
+  constructor () {
+    super()
+    this.itemType = ItemType.SHOTGUN
+    this.paddingX = 0
+    this.paddingY = 0
+    this.TEXTURE_CHANGING_COUNTDOWN = 30  // 闪烁效果
+  }
+}
+
+export {
+  ShotgunItem
+}

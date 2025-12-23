@@ -16,6 +16,8 @@ class Offscreen {
 
   constructor (width: number, height: number) {
     const canvasElement = <HTMLCanvasElement> document.createElement('canvas')
+    canvasElement.width = width
+    canvasElement.height = height
     const context = <CanvasRenderingContext2D> canvasElement.getContext('2d')
     this._canvasElement = canvasElement
     this._context = context

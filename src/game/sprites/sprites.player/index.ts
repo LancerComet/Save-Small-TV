@@ -109,11 +109,18 @@ class SmallTV extends Sprite {
    *
    * @param {WeaponType} type
    * @param {number} duration - Duration in seconds (0 = permanent)
+   * @param {boolean} additive - If true, add duration to existing time
    * @memberof SmallTV
    */
-  switchWeapon (type: WeaponType, duration: number = 0) {
-    this.currentWeaponType = type
-    this.weaponDuration = duration
+  switchWeapon (type: WeaponType, duration: number = 0, additive: boolean = false) {
+    // 如果是同类型武器且叠加模式，累加时间
+    if (additive && this.currentWeaponType === type) {
+      this.weaponDuration += duration
+    } else {
+      // 切换不同武器时，保留较大的时间
+      this.currentWeaponType = type
+      this.weaponDuration = Math.max(this.weaponDuration, duration)
+    }
 
     switch (type) {
       case WeaponType.POWER_BULLET:

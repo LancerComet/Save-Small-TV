@@ -1,0 +1,5 @@
+const ENERMY_INCREMENT_RATIO = 1.3
+
+export {
+  ENERMY_INCREMENT_RATIO
+}

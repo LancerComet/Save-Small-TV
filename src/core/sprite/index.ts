@@ -100,6 +100,15 @@ class Sprite {
   protected currentTexture: number = 0
 
   /**
+   * Track last rendered texture to avoid unnecessary putImageData.
+   *
+   * @private
+   * @type {number}
+   * @memberof Sprite
+   */
+  private lastRenderedTexture: number = -1
+
+  /**
    * Offscreen canvas for this sprite.
    *
    * @type {Offscreen}
@@ -121,51 +130,41 @@ class Sprite {
    */
   protected TEXTURE_CHANGING_COUNTDOWN: number | false = null
   private $textureChangingCountdown: number = 0
-  private textChangingCountdownRafID: number = 0
 
   /**
-   * Start a countdown to calculate texture changing time.
+   * Update texture animation (call once per frame from game loop).
+   * This replaces the old per-sprite rAF loop.
    *
-   * @private
    * @memberof Sprite
    */
-  private textChangingCountdownExec () {
-    if (this.$textureChangingCountdown <= 0) {
-      this.currentTexture = this.currentTexture >= this.textures.length - 1
-        ? 0
-        : this.currentTexture + 1
-
-      this.$textureChangingCountdown = <number> this.TEXTURE_CHANGING_COUNTDOWN
-    } else {
-      this.$textureChangingCountdown--
+  updateTexture () {
+    // Lazy init offscreen with correct size (子类属性在父类构造函数中还未初始化)
+    if (!this.offscreen || this.offscreen.canvasElement.width !== this.width) {
+      this.offscreen = new Offscreen(this.width, this.height)
+      this.lastRenderedTexture = -1  // Force re-render
     }
-    this.textChangingCountdownRafID = requestAnimationFrame(this.textChangingCountdownExec.bind(this))
-  }
 
-  /**
-   * Raf ID for offscreen drawing.
-   *
-   * @private
-   * @memberof Sprite
-   */
-  private offscreenDrawingRafID = null
+    // Handle texture animation countdown
+    if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
+      if (this.$textureChangingCountdown <= 0) {
+        this.currentTexture = this.currentTexture >= this.textures.length - 1
+          ? 0
+          : this.currentTexture + 1
+        this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+      } else {
+        this.$textureChangingCountdown--
+      }
+    }
 
-  /**
-   * Draw texture into offscreen.
-   *
-   * @private
-   * @memberof Sprite
-   */
-  private offscreenDrawingExec () {
-    const context = this.offscreen.context
-    context.putImageData(
-      this.textures[this.currentTexture],
-      0,
-      0
-    )
-    this.offscreenDrawingRafID = requestAnimationFrame(
-      this.offscreenDrawingExec.bind(this)
-    )
+    // Only update offscreen if texture changed
+    if (this.currentTexture !== this.lastRenderedTexture && this.textures[this.currentTexture]) {
+      this.offscreen.context.putImageData(
+        this.textures[this.currentTexture],
+        0,
+        0
+      )
+      this.lastRenderedTexture = this.currentTexture
+    }
   }
 
   /**
@@ -174,8 +173,7 @@ class Sprite {
    * @memberof Sprite
    */
   $destroy () {
-    cancelAnimationFrame(this.textChangingCountdownRafID)
-    cancelAnimationFrame(this.offscreenDrawingRafID)
+    // No more rAF to cancel - cleanup is simpler now
   }
 
   /**
@@ -184,20 +182,13 @@ class Sprite {
    * @memberof Sprite
    */
   constructor () {
-    // Init offscreen.
-    this.offscreen = new Offscreen(this.width, this.height)
+    // Offscreen will be lazy-initialized in updateTexture()
+    // because subclass properties (width, height, textures) are not available yet
 
-    // Something will be execued at last.
-    setTimeout(() => {
-      // Start texture changing.
-      if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
-        this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
-        this.textChangingCountdownExec()
-      }
-
-      // Start to draw textures into offscren.
-      this.offscreenDrawingExec()
-    }, 1)
+    // Initialize texture countdown
+    if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
+      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+    }
   }
 }
 

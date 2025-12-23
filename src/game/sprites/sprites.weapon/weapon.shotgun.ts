@@ -5,6 +5,7 @@ const WIDTH = 8
 const HEIGHT = 8
 const SPEED = 3
 const MAX_DISTANCE = 75  // 射程 (+50%)
+const SPREAD_ANGLE = 22.5  // 散射角度（度）
 
 const COLOR_MAP: TColorMap = {
   '0': 'transparent',
@@ -67,8 +68,16 @@ const DIRECTION_TEXTURE_MAPPING = {
   'B': 3
 }
 
+// 方向对应的基础角度（弧度）
+const DIRECTION_BASE_ANGLE: Record<TDirection, number> = {
+  'R': 0,                    // 0°
+  'B': Math.PI / 2,          // 90°
+  'L': Math.PI,              // 180°
+  'T': -Math.PI / 2          // -90° (270°)
+}
+
 /**
- * 散弹的单个弹丸
+ * 散弹的单个弹丸 - 支持角度散射
  */
 class ShotgunPellet extends Weapon {
   width = WIDTH
@@ -79,9 +88,11 @@ class ShotgunPellet extends Weapon {
   startX = 0
   startY = 0
 
-  // 散射偏移
-  offsetX = 0
-  offsetY = 0
+  // 散射角度（弧度）
+  angle = 0
+  // 速度分量
+  velocityX = 0
+  velocityY = 0
 
   get direction (): TDirection {
     return this._direction
@@ -91,7 +102,7 @@ class ShotgunPellet extends Weapon {
     this.currentTexture = DIRECTION_TEXTURE_MAPPING[direction]
   }
 
-  constructor (param: IWeapon & { offsetX?: number, offsetY?: number }) {
+  constructor (param: IWeapon & { angle?: number }) {
     super()
 
     this.x = param.x
@@ -102,48 +113,57 @@ class ShotgunPellet extends Weapon {
     this.paddingX = 3
     this.paddingY = 3
     this.direction = param.direction
-    this.offsetX = param.offsetX || 0
-    this.offsetY = param.offsetY || 0
+
+    // 计算飞行角度
+    const baseAngle = DIRECTION_BASE_ANGLE[param.direction]
+    this.angle = baseAngle + (param.angle || 0)
+
+    // 预计算速度分量
+    this.velocityX = Math.cos(this.angle)
+    this.velocityY = Math.sin(this.angle)
 
     this.TEXTURE_CHANGING_COUNTDOWN = false
   }
 
+  /**
+   * 按角度移动弹丸
+   */
+  move (deltaSpeed: number) {
+    this.x += this.velocityX * deltaSpeed
+    this.y += this.velocityY * deltaSpeed
+  }
+
   isOutOfRange (): boolean {
-    const dx = Math.abs(this.x - this.startX)
-    const dy = Math.abs(this.y - this.startY)
-    return Math.max(dx, dy) > this.maxDistance
+    const dx = this.x - this.startX
+    const dy = this.y - this.startY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    return distance > this.maxDistance
   }
 }
 
 /**
  * Shotgun - 散弹枪
- * 一次发射多颗弹丸，范围广但射程最短
+ * 一次发射多颗弹丸，扇形散射
  */
 class Shotgun {
   /**
-   * 创建散弹（返回多个弹丸）
+   * 创建散弹（返回多个弹丸，扇形散射）
    */
   static createPellets (param: IWeapon): ShotgunPellet[] {
     const pellets: ShotgunPellet[] = []
-    const spreadOffsets = [-4, 0, 4]  // 三颗弹丸的散射偏移
+    // 散射角度：-22.5°, 0°, +22.5° (转换为弧度)
+    const spreadAngles = [
+      -SPREAD_ANGLE * Math.PI / 180,
+      0,
+      SPREAD_ANGLE * Math.PI / 180
+    ]
 
-    for (const offset of spreadOffsets) {
-      let offsetX = 0
-      let offsetY = 0
-
-      // 根据方向计算垂直于发射方向的偏移
-      if (param.direction === 'L' || param.direction === 'R') {
-        offsetY = offset
-      } else {
-        offsetX = offset
-      }
-
+    for (const angleOffset of spreadAngles) {
       const pellet = new ShotgunPellet({
-        x: param.x + offsetX,
-        y: param.y + offsetY,
+        x: param.x,
+        y: param.y,
         direction: param.direction,
-        offsetX,
-        offsetY
+        angle: angleOffset
       })
 
       pellets.push(pellet)

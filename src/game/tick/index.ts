@@ -12,6 +12,7 @@ import { SpecialItem, ItemType, getRandomItem } from '../sprites/sprites.special
 import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/sprites.effects'
 
 import { floor, rand } from '../utils'
+import { ENERMY_INCREMENT_RATIO } from '../config'
 
 // Time constants (in seconds)
 const MAX_SPECIAL_ITEMS = 5
@@ -130,8 +131,10 @@ class Enemys {
   static genEnemys (stage: Stage, deltaTime: number) {
     const enemys = Enemys.enemys
 
-    // Total enemy count is equal to level.
-    if (enemys.length >= level) { return }
+    const maxEnemies = Math.floor(5 + level * ENERMY_INCREMENT_RATIO)
+    if (enemys.length >= maxEnemies) {
+      return
+    }
 
     if (Enemys.$genEnemyCountdown > 0) {
       Enemys.$genEnemyCountdown -= deltaTime
@@ -299,6 +302,7 @@ class Enemys {
    * @memberof Enemy
    */
   static draw (stage: Stage, enemy: Enemy) {
+    enemy.updateTexture()  // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(enemy.x, enemy.y)
     stage.context.drawImage(
       enemy.offscreen.canvasElement,
@@ -507,10 +511,10 @@ class SpecialItems {
   static applyItemEffect (player: SmallTV, item: SpecialItem) {
     switch (item.itemType) {
       case ItemType.POWER_BULLET:
-        player.switchWeapon(WeaponType.POWER_BULLET, WEAPON_DURATION)
+        player.switchWeapon(WeaponType.POWER_BULLET, WEAPON_DURATION, true)
         break
       case ItemType.SHOTGUN:
-        player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION)
+        player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION, true)
         break
       default:
         break
@@ -548,6 +552,7 @@ class SpecialItems {
    * @memberof SpecialItems
    */
   static draw (stage: Stage, item: SpecialItem) {
+    item.updateTexture()  // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(item.x, item.y)
     stage.context.drawImage(
       item.offscreen.canvasElement,
@@ -668,6 +673,7 @@ class Player {
   }
 
   static draw (stage: Stage, player: SmallTV) {
+    player.updateTexture()  // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(player.x, player.y)
     stage.context.drawImage(
       player.offscreen.canvasElement, screenX, screenY
@@ -777,10 +783,16 @@ class Weapons {
         // Move weapon - speed is now pixels per second
         const speed = weapon.speed * BASE_FPS * deltaTime
         const direction = weapon.direction
-        if (direction === 'L') { weapon.x -= speed }
-        if (direction === 'R') { weapon.x += speed }
-        if (direction === 'T') { weapon.y -= speed }
-        if (direction === 'B') { weapon.y += speed }
+
+        // 散弹使用角度移动
+        if (weapon instanceof ShotgunPellet) {
+          weapon.move(speed)
+        } else {
+          if (direction === 'L') { weapon.x -= speed }
+          if (direction === 'R') { weapon.x += speed }
+          if (direction === 'T') { weapon.y -= speed }
+          if (direction === 'B') { weapon.y += speed }
+        }
 
         // Check range limit for special weapons
         const weaponWithRange = weapon as (PowerBullet | ShotgunPellet)
@@ -827,6 +839,7 @@ class Weapons {
           continue
         }
 
+        weapon.updateTexture()  // Update texture animation
         const [screenX, screenY] = stage.camera.toScreen(weapon.x, weapon.y)
         stage.context.drawImage(
           weapon.offscreen.canvasElement, screenX, screenY

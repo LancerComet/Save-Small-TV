@@ -19,6 +19,12 @@ class Camera {
   viewportHeight: number = 0
 
   /**
+   * Reusable arrays for coordinate conversion (reduces GC pressure).
+   */
+  private screenCoords: [number, number] = [0, 0]
+  private worldCoords: [number, number] = [0, 0]
+
+  /**
    * Set viewport size.
    *
    * @param {number} width
@@ -48,6 +54,7 @@ class Camera {
 
   /**
    * Convert world coordinates to screen coordinates.
+   * Note: Reuses internal array - do not store the returned reference!
    *
    * @param {number} worldX
    * @param {number} worldY
@@ -55,11 +62,14 @@ class Camera {
    * @memberof Camera
    */
   toScreen (worldX: number, worldY: number): [number, number] {
-    return [worldX - this.x, worldY - this.y]
+    this.screenCoords[0] = worldX - this.x
+    this.screenCoords[1] = worldY - this.y
+    return this.screenCoords
   }
 
   /**
    * Convert screen coordinates to world coordinates.
+   * Note: Reuses internal array - do not store the returned reference!
    *
    * @param {number} screenX
    * @param {number} screenY
@@ -67,7 +77,9 @@ class Camera {
    * @memberof Camera
    */
   toWorld (screenX: number, screenY: number): [number, number] {
-    return [screenX + this.x, screenY + this.y]
+    this.worldCoords[0] = screenX + this.x
+    this.worldCoords[1] = screenY + this.y
+    return this.worldCoords
   }
 
   /**

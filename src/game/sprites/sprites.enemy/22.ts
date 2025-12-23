@@ -68,7 +68,7 @@ class Sprite22 extends Enemy {
     this.paddingX = 3
     this.paddingY = 3
     this.TEXTURE_CHANGING_COUNTDOWN = 60 * 1
-    this.destroyCountdown = 1
+    this.destroyCountdown = 0
   }
 }
 

@@ -1,4 +1,5 @@
 import { Sprite } from '../../core/sprite'
+import { Camera } from '../../core/camera'
 
 /**
  * Stage class.
@@ -59,6 +60,16 @@ class Stage {
     })
   }
 
+  // Camera.
+  // ==================================
+  /**
+   * Camera for world-to-screen coordinate transformation.
+   *
+   * @type {Camera}
+   * @memberof Stage
+   */
+  camera: Camera = new Camera()
+
   // UI.
   // ==================================
   printText (text: string, x: number, y: number) {
@@ -69,7 +80,12 @@ class Stage {
   // Key.
   // ==================================
   keyPressed = {
-    T: false, B: false, L: false, R: false, X: false, Y: false, START: false, ESC: false
+    // 移动键 (WASD)
+    W: false, A: false, S: false, D: false,
+    // 发射键 (箭头)
+    UP: false, DOWN: false, LEFT: false, RIGHT: false,
+    // 功能键
+    X: false, Y: false, START: false, ESC: false
   }
 
   /**
@@ -89,20 +105,38 @@ class Stage {
           this.keyPressed.ESC = true
           break
 
+        // 箭头键 - 发射方向
         case 37:
-          this.keyPressed.L = true
+          this.keyPressed.LEFT = true
           break
 
         case 38:
-          this.keyPressed.T = true
+          this.keyPressed.UP = true
           break
 
         case 39:
-          this.keyPressed.R = true
+          this.keyPressed.RIGHT = true
           break
 
         case 40:
-          this.keyPressed.B = true
+          this.keyPressed.DOWN = true
+          break
+
+        // WASD - 移动
+        case 87:  // W
+          this.keyPressed.W = true
+          break
+
+        case 65:  // A
+          this.keyPressed.A = true
+          break
+
+        case 83:  // S
+          this.keyPressed.S = true
+          break
+
+        case 68:  // D
+          this.keyPressed.D = true
           break
 
         case 90:
@@ -128,20 +162,38 @@ class Stage {
           this.keyPressed.ESC = false
           break
 
+        // 箭头键 - 发射方向
         case 37:
-          this.keyPressed.L = false
+          this.keyPressed.LEFT = false
           break
 
         case 38:
-          this.keyPressed.T = false
+          this.keyPressed.UP = false
           break
 
         case 39:
-          this.keyPressed.R = false
+          this.keyPressed.RIGHT = false
           break
 
         case 40:
-          this.keyPressed.B = false
+          this.keyPressed.DOWN = false
+          break
+
+        // WASD - 移动
+        case 87:  // W
+          this.keyPressed.W = false
+          break
+
+        case 65:  // A
+          this.keyPressed.A = false
+          break
+
+        case 83:  // S
+          this.keyPressed.S = false
+          break
+
+        case 68:  // D
+          this.keyPressed.D = false
           break
 
         case 90:

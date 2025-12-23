@@ -9,7 +9,7 @@ import { Enemy, getRandomEnemy } from '../sprites/sprites.enemy'
 import { SmallTV } from '../sprites/sprites.player'
 import { Bullet, Weapon, WeaponType, Shotgun, PowerBullet, ShotgunPellet } from '../sprites/sprites.weapon'
 import { SpecialItem, ItemType, getRandomItem } from '../sprites/sprites.special-items'
-import { BloodParticle, BloodEffect } from '../sprites/sprites.effects'
+import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/sprites.effects'
 
 import { floor, rand } from '../utils'
 
@@ -79,6 +79,8 @@ class Init {
     const stageSize = stage.logicalSize
     stageWidth = stageSize[0]
     stageHeight = stageSize[1]
+    // 初始化摄像机视口
+    stage.camera.setViewport(stageWidth, stageHeight)
   }
 
   /**
@@ -135,12 +137,10 @@ class Enemys {
       return
     }
 
-    const logicSize = stage.logicalSize
-
     const EnemyType = getRandomEnemy()
     const enemy = new EnemyType()
 
-    const startPosition = Enemys.createStartPosition()
+    const startPosition = Enemys.createStartPosition(stage)
     enemy.x = startPosition[0]
     enemy.y = startPosition[1]
 
@@ -150,16 +150,43 @@ class Enemys {
   }
 
   /**
-   * Create enemy start position.
+   * Create enemy start position relative to camera viewport.
+   * Enemies spawn just outside the visible area.
    *
    * @static
+   * @param {Stage} stage
    * @memberof Enemy
    */
-  static createStartPosition () {
-    return [
-      [rand(stageWidth), randomY()],
-      [randomX(), rand(stageHeight)]
-    ][floor(rand(2))]
+  static createStartPosition (stage: Stage) {
+    const camera = stage.camera
+    const bounds = camera.getWorldBounds()
+    const spawnOffset = 30  // 在视口外多远生成
+
+    // 随机选择从哪个方向生成（上、下、左、右）
+    const side = floor(rand(4))
+    let x: number, y: number
+
+    switch (side) {
+      case 0:  // 上方
+        x = bounds.left + rand(stageWidth)
+        y = bounds.top - spawnOffset
+        break
+      case 1:  // 下方
+        x = bounds.left + rand(stageWidth)
+        y = bounds.bottom + spawnOffset
+        break
+      case 2:  // 左侧
+        x = bounds.left - spawnOffset
+        y = bounds.top + rand(stageHeight)
+        break
+      case 3:  // 右侧
+      default:
+        x = bounds.right + spawnOffset
+        y = bounds.top + rand(stageHeight)
+        break
+    }
+
+    return [x, y]
   }
 
   /**
@@ -210,12 +237,12 @@ class Enemys {
    */
   static autoMove (enemy: Enemy, deltaTime: number) {
     if (enemy.isDead) {
-      // 生成血液效果（只在刚死亡时触发一次）
+      // 生成爆炸效果（只在刚死亡时触发一次）
       if (!enemy.hasSpawnedBlood) {
-        Effects.spawnBlood(
+        Effects.spawnExplosion(
           enemy.x + enemy.width / 2,
           enemy.y + enemy.height / 2,
-          12  // 粒子数量
+          20  // 爆炸粒子数量
         )
         enemy.hasSpawnedBlood = true
       }
@@ -239,35 +266,20 @@ class Enemys {
       return
     }
 
-    // Speed is now pixels per second, multiply by deltaTime
-    const speed = enemy.speed * BASE_FPS * deltaTime
-    const x = enemy.x
-    const y = enemy.y
-    const sizeX = enemy.width
-    const sizeY = enemy.height
+    // 敌人朝向玩家移动
+    const player = Player1.player
+    if (!player) { return }
 
-    enemy.x = enemy.dirX === 'L'
-      ? x - speed
-      : x + speed
+    // 计算朝向玩家的方向
+    const dx = player.x - enemy.x
+    const dy = player.y - enemy.y
+    const distance = Math.sqrt(dx * dx + dy * dy)
 
-    enemy.y = enemy.dirY === 'T'
-      ? y - speed
-      : y + speed
-
-    if (x <= 0) {
-      enemy.dirX = 'R'
-    }
-
-    if (y <= 0) {
-      enemy.dirY = 'B'
-    }
-
-    if (x >= stageWidth - sizeX) {
-      enemy.dirX = 'L'
-    }
-
-    if (y >= stageHeight - sizeY) {
-      enemy.dirY = 'T'
+    if (distance > 0) {
+      // 归一化方向并乘以速度
+      const speed = enemy.speed * BASE_FPS * deltaTime
+      enemy.x += (dx / distance) * speed
+      enemy.y += (dy / distance) * speed
     }
   }
 
@@ -280,10 +292,11 @@ class Enemys {
    * @memberof Enemy
    */
   static draw (stage: Stage, enemy: Enemy) {
+    const [screenX, screenY] = stage.camera.toScreen(enemy.x, enemy.y)
     stage.context.drawImage(
       enemy.offscreen.canvasElement,
-      enemy.x,
-      enemy.y
+      screenX,
+      screenY
     )
   }
 
@@ -342,6 +355,25 @@ class Effects {
   }
 
   /**
+   * Explosion particles.
+   */
+  static explosionParticles: ExplosionParticle[] = []
+
+  /**
+   * Spawn explosion particles at position.
+   *
+   * @static
+   * @param {number} x
+   * @param {number} y
+   * @param {number} count
+   * @memberof Effects
+   */
+  static spawnExplosion (x: number, y: number, count: number = 16) {
+    const particles = ExplosionEffect.create(x, y, count, 3)
+    Effects.explosionParticles.push(...particles)
+  }
+
+  /**
    * Update and draw all particles.
    *
    * @static
@@ -350,24 +382,43 @@ class Effects {
    * @memberof Effects
    */
   static $tick (stage: Stage, deltaTime: number) {
+    // 处理血液粒子
     for (let i = Effects.bloodParticles.length - 1; i >= 0; i--) {
       const particle = Effects.bloodParticles[i]
       if (!particle) { continue }
 
-      // Update particle physics with deltaTime
       particle.update(deltaTime)
 
-      // Remove dead particles
       if (particle.isDead) {
         Effects.bloodParticles.splice(i, 1)
         continue
       }
 
-      // Draw particle
+      const [screenX, screenY] = stage.camera.toScreen(particle.x, particle.y)
       stage.context.drawImage(
         particle.offscreen.canvasElement,
-        particle.x,
-        particle.y
+        screenX,
+        screenY
+      )
+    }
+
+    // 处理爆炸粒子
+    for (let i = Effects.explosionParticles.length - 1; i >= 0; i--) {
+      const particle = Effects.explosionParticles[i]
+      if (!particle) { continue }
+
+      particle.update(deltaTime)
+
+      if (particle.isDead) {
+        Effects.explosionParticles.splice(i, 1)
+        continue
+      }
+
+      const [screenX, screenY] = stage.camera.toScreen(particle.x, particle.y)
+      stage.context.drawImage(
+        particle.offscreen.canvasElement,
+        screenX,
+        screenY
       )
     }
   }
@@ -380,6 +431,7 @@ class Effects {
    */
   static $reset () {
     Effects.bloodParticles = []
+    Effects.explosionParticles = []
   }
 }
 
@@ -495,10 +547,11 @@ class SpecialItems {
    * @memberof SpecialItems
    */
   static draw (stage: Stage, item: SpecialItem) {
+    const [screenX, screenY] = stage.camera.toScreen(item.x, item.y)
     stage.context.drawImage(
       item.offscreen.canvasElement,
-      item.x,
-      item.y
+      screenX,
+      screenY
     )
   }
 
@@ -553,23 +606,39 @@ class Player {
   static keyControl (stage: Stage, player: SmallTV) {
     const keyPressed = stage.keyPressed
 
-    if (keyPressed.L) {
-      player.dirX = player.weaponDirection = 'L'
-    } else if (keyPressed.R) {
-      player.dirX = player.weaponDirection = 'R'
+    // WASD 控制移动
+    if (keyPressed.A) {
+      player.dirX = 'L'
+    } else if (keyPressed.D) {
+      player.dirX = 'R'
     } else {
       player.dirX = null
     }
 
-    if (keyPressed.T) {
-      player.dirY = player.weaponDirection = 'T'
-    } else if (keyPressed.B) {
-      player.dirY = player.weaponDirection = 'B'
+    if (keyPressed.W) {
+      player.dirY = 'T'
+    } else if (keyPressed.S) {
+      player.dirY = 'B'
     } else {
       player.dirY = null
     }
 
-    player.attacking = keyPressed.X || keyPressed.Y || false
+    // 箭头键控制发射方向，按下即发射
+    if (keyPressed.LEFT) {
+      player.weaponDirection = 'L'
+      player.attacking = true
+    } else if (keyPressed.RIGHT) {
+      player.weaponDirection = 'R'
+      player.attacking = true
+    } else if (keyPressed.UP) {
+      player.weaponDirection = 'T'
+      player.attacking = true
+    } else if (keyPressed.DOWN) {
+      player.weaponDirection = 'B'
+      player.attacking = true
+    } else {
+      player.attacking = false
+    }
   }
 
   static move (stage: Stage, player: SmallTV, deltaTime: number) {
@@ -581,15 +650,26 @@ class Player {
   }
 
   static positionLimit (player: SmallTV) {
-    if (player.x <= 0) { player.x = 0 }
-    if (player.x >= stageWidth - player.width) { player.x = stageWidth - player.width }
-    if (player.y <= 0) { player.y = 0 }
-    if (player.y >= stageHeight - player.height) { player.y = stageHeight - player.height }
+    // 无缝地图：移除边界限制，玩家可以自由移动
+    // 如需世界边界，可在此添加
+  }
+
+  /**
+   * Update camera to follow player.
+   *
+   * @static
+   * @param {Stage} stage
+   * @param {SmallTV} player
+   * @memberof Player
+   */
+  static updateCamera (stage: Stage, player: SmallTV) {
+    stage.camera.follow(player.x, player.y, player.width, player.height)
   }
 
   static draw (stage: Stage, player: SmallTV) {
+    const [screenX, screenY] = stage.camera.toScreen(player.x, player.y)
     stage.context.drawImage(
-      player.offscreen.canvasElement, player.x, player.y
+      player.offscreen.canvasElement, screenX, screenY
     )
   }
 
@@ -597,6 +677,7 @@ class Player {
     Player.keyControl(stage, player)
     Player.move(stage, player, deltaTime)
     Player.positionLimit(player)
+    Player.updateCamera(stage, player)  // 摄像机跟随玩家
     Player.draw(stage, player)
   }
 }
@@ -723,6 +804,14 @@ class Weapons {
             (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
           ) {
             enemy.hp -= weapon.attack
+
+            // 被打中时出血效果
+            Effects.spawnBlood(
+              weapon.x,
+              weapon.y,
+              6  // 较少的血液粒子
+            )
+
             weapons.splice(j, 1)
             weaponDestroyed = true
             break
@@ -731,14 +820,15 @@ class Weapons {
 
         if (weaponDestroyed) { continue }
 
-        // If weapon moves out, destroy it.
-        if (isOutOfStage(weapon.x, weapon.y, weapon.width, weapon.height)) {
+        // If weapon moves out of camera view, destroy it.
+        if (!stage.camera.isVisible(weapon.x, weapon.y, weapon.width, weapon.height)) {
           weapons.splice(j, 1)
           continue
         }
 
+        const [screenX, screenY] = stage.camera.toScreen(weapon.x, weapon.y)
         stage.context.drawImage(
-          weapon.offscreen.canvasElement, weapon.x, weapon.y
+          weapon.offscreen.canvasElement, screenX, screenY
         )
       }
     }

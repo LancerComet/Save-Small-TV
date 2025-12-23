@@ -1,28 +1,52 @@
-# Wepback Project Template.
+# Save Small TV 🎮
 
-> A webpack 3 startkit. Based on Vue webpack template.
+> A pixel-style shooting game built with TypeScript and Canvas 2D.
 
-## Build Setup
+![Game Preview](https://img.shields.io/badge/Game-Play%20Now-brightgreen)
 
-``` bash
-# install dependencies
+## 🎯 Features
+
+- **Infinite Map**: Camera follows player, enemies spawn around viewport
+- **Multiple Weapons**: Bullet, Power Bullet, Shotgun
+- **Special Items**: Random drops from enemies
+- **Visual Effects**: Blood splatter and explosion particles
+- **Level System**: Difficulty increases every 100 points
+
+## 🎮 Controls
+
+| Key | Action |
+|-----|--------|
+| W/A/S/D | Move |
+| ↑/↓/←/→ | Shoot |
+| Enter | Start/Restart |
+
+## 🚀 Development
+
+```bash
+# Install dependencies
 npm install
 
-# serve with hot reload at localhost:8080
+# Start dev server
 npm run dev
 
-# build for production with minification
+# Build for production
 npm run build
 
-# build for production and view the bundle analyzer report
-npm run build --report
-
-# run unit tests
-npm run unit
-
-# run e2e tests
-npm run e2e
-
-# run all tests
-npm test
+# Preview production build
+npm run preview
 ```
+
+## 📦 Tech Stack
+
+- **Vite** - Build tool
+- **TypeScript** - Type safety
+- **Canvas 2D** - Rendering
+- **Stylus** - CSS preprocessor
+
+## 🌐 Deployment
+
+This project auto-deploys to GitHub Pages on push to `main`/`master` branch.
+
+## 📄 License
+
+MIT

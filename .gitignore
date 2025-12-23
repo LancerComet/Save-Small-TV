@@ -1,10 +1,22 @@
-.DS_Store
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-npm-debug.log
-test/unit/coverage
-test/e2e/reports
-selenium-debug.log
+
+# IDE
 .idea/
 .vscode/
-.cache-loader/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Lock files (optional)
+package-lock.json

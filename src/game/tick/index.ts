@@ -10,15 +10,17 @@ import { SmallTV } from '../sprites/sprites.player'
 import { Bullet, Weapon, WeaponType, Shotgun, PowerBullet, ShotgunPellet } from '../sprites/sprites.weapon'
 import { SpecialItem, ItemType, getRandomItem } from '../sprites/sprites.special-items'
 import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/sprites.effects'
+import { spaceBackground } from '../background'
 
 import { floor, rand } from '../utils'
-import { ENERMY_INCREMENT_RATIO } from '../config'
+import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
 
 // Time constants (in seconds)
 const MAX_SPECIAL_ITEMS = 5
 const GEN_SPECIAL_INTERVAL = 30  // seconds
 const MAX_ENEMYS = 10
-const GEN_ENEMY_INTERVAL = 2  // seconds
+const GEN_ENEMY_INTERVAL = 0.5  // seconds - 更快生成
+const ENEMIES_PER_SPAWN = 3  // 每次生成敌人数量
 const GEN_WEAPON_INTERVAL = 0.083  // ~5 frames at 60fps = 5/60 seconds
 const ITEM_DROP_CHANCE = 0.3  // 30% chance to drop item
 const WEAPON_DURATION = 10  // seconds
@@ -51,6 +53,11 @@ function tick (stage: Stage, deltaTime: number) {
   }
 
   Init.$tick(stage)
+
+  // Draw space background first (with parallax)
+  spaceBackground.update()
+  spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
+
   Enemys.$tick(stage, deltaTime)
   Effects.$tick(stage, deltaTime)
   SpecialItems.$tick(stage, deltaTime)
@@ -83,6 +90,8 @@ class Init {
     stageHeight = stageSize[1]
     // 初始化摄像机视口
     stage.camera.setViewport(stageWidth, stageHeight)
+    // 初始化太空背景
+    spaceBackground.init(stageWidth, stageHeight)
   }
 
   /**
@@ -104,7 +113,9 @@ class Init {
    */
   static $tick (stage: Stage) {
     // Init size.
-    if (!stageWidth || !stageHeight) { Init.size(stage) }
+    if (!stageWidth || !stageHeight) {
+      Init.size(stage)
+    }
 
     // Init player.
     !Player1.player && Init.player1()
@@ -131,7 +142,7 @@ class Enemys {
   static genEnemys (stage: Stage, deltaTime: number) {
     const enemys = Enemys.enemys
 
-    const maxEnemies = Math.floor(5 + level * ENERMY_INCREMENT_RATIO)
+    const maxEnemies = Math.floor(ENERMY_BASE_COUNT + level * ENERMY_INCREMENT_RATIO)
     if (enemys.length >= maxEnemies) {
       return
     }
@@ -141,14 +152,18 @@ class Enemys {
       return
     }
 
-    const EnemyType = getRandomEnemy()
-    const enemy = new EnemyType()
+    // 一次生成多个敌人，直到达到上限
+    const toSpawn = Math.min(ENEMIES_PER_SPAWN, maxEnemies - enemys.length)
+    for (let i = 0; i < toSpawn; i++) {
+      const EnemyType = getRandomEnemy()
+      const enemy = new EnemyType()
 
-    const startPosition = Enemys.createStartPosition(stage)
-    enemy.x = startPosition[0]
-    enemy.y = startPosition[1]
+      const startPosition = Enemys.createStartPosition(stage)
+      enemy.x = startPosition[0]
+      enemy.y = startPosition[1]
 
-    enemys.push(enemy)
+      enemys.push(enemy)
+    }
 
     Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
   }

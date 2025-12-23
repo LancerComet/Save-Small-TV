@@ -1,4 +1,5 @@
 import { Sprite } from '../../../core/sprite'
+import { IBehavior, ChaseBehavior } from '../../behaviors'
 
 class Enemy extends Sprite {
   /**
@@ -27,8 +28,33 @@ class Enemy extends Sprite {
    */
   hasSpawnedBlood: boolean = false
 
+  /**
+   * 敌人的移动行为
+   * 默认为追踪行为（追踪玩家）
+   */
+  behavior: IBehavior = new ChaseBehavior()
+
   constructor () {
     super()
+  }
+
+  /**
+   * 设置行为
+   * @param behavior 新的行为
+   */
+  setBehavior (behavior: IBehavior): this {
+    this.behavior = behavior
+    this.behavior.init?.(this)
+    return this
+  }
+
+  /**
+   * 根据行为移动
+   * @param target 目标精灵（如玩家），可为 null
+   * @param deltaTime 时间增量（秒）
+   */
+  move (target: Sprite | null, deltaTime: number): void {
+    this.behavior.update(this, target, deltaTime)
   }
 }
 

@@ -11,6 +11,7 @@ import { Bullet, Weapon, WeaponType, Shotgun, PowerBullet, ShotgunPellet } from 
 import { SpecialItem, ItemType, getRandomItem } from '../sprites/sprites.special-items'
 import { BloodParticle, BloodEffect, ExplosionParticle, ExplosionEffect } from '../sprites/sprites.effects'
 import { spaceBackground } from '../background'
+import { waveManager } from '../waves'
 
 import { floor, rand } from '../utils'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
@@ -59,6 +60,7 @@ function tick (stage: Stage, deltaTime: number) {
   spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
 
   Enemys.$tick(stage, deltaTime)
+  Waves.$tick(stage, deltaTime)  // 波次系统
   Effects.$tick(stage, deltaTime)
   SpecialItems.$tick(stage, deltaTime)
   Player1.$tick(stage, deltaTime)
@@ -291,21 +293,11 @@ class Enemys {
       return
     }
 
-    // 敌人朝向玩家移动
+    // 敌人通过行为系统移动（追踪玩家）
     const player = Player1.player
     if (!player) { return }
 
-    // 计算朝向玩家的方向
-    const dx = player.x - enemy.x
-    const dy = player.y - enemy.y
-    const distance = Math.sqrt(dx * dx + dy * dy)
-
-    if (distance > 0) {
-      // 归一化方向并乘以速度
-      const speed = enemy.speed * BASE_FPS * deltaTime
-      enemy.x += (dx / distance) * speed
-      enemy.y += (dy / distance) * speed
-    }
+    enemy.move(player, deltaTime)
   }
 
   /**
@@ -355,6 +347,102 @@ class Enemys {
   static $reset () {
     Enemys.enemys = []
     Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+  }
+}
+
+/**
+ * Wave System - 波次系统
+ * 管理特殊敌人波次
+ *
+ * @class Waves
+ */
+class Waves {
+  /**
+   * 检测波次敌人与玩家的碰撞
+   */
+  static detectPlayer (enemy: Enemy) {
+    if (enemy.isDead) return
+
+    const eLeft = enemy.x + enemy.paddingX
+    const eTop = enemy.y + enemy.paddingY
+    const eRight = enemy.x + enemy.width - enemy.paddingX
+    const eBottom = enemy.y + enemy.height - enemy.paddingY
+
+    for (const player of Player.allPlayers) {
+      if (!player || player.isDead) continue
+
+      const pLeft = player.x + 1
+      const pTop = player.y + 2
+      const pRight = player.x + player.width - 1
+      const pBottom = player.y + player.height - 2
+
+      if (eRight > pLeft && eLeft < pRight && eBottom > pTop && eTop < pBottom) {
+        gameOver = true
+        return
+      }
+    }
+  }
+
+  /**
+   * 检测武器与波次敌人的碰撞
+   */
+  static checkWeaponHit (weapon: Weapon): boolean {
+    const weaponPdX = weapon.paddingX
+    const weaponPdY = weapon.paddingY
+
+    for (let i = waveManager.waveEnemies.length - 1; i >= 0; i--) {
+      const enemy = waveManager.waveEnemies[i]
+      if (!enemy || enemy.isDead) continue
+
+      const startX = enemy.x + enemy.paddingX
+      const startY = enemy.y + enemy.paddingY
+      const endX = enemy.x + enemy.width - enemy.paddingX
+      const endY = enemy.y + enemy.height - enemy.paddingY
+
+      if (
+        (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
+        (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
+      ) {
+        enemy.hp -= weapon.attack
+
+        // 出血效果
+        Effects.spawnBlood(weapon.x, weapon.y, 6)
+
+        if (enemy.isDead) {
+          // 爆炸效果
+          Effects.spawnExplosion(
+            enemy.x + enemy.width / 2,
+            enemy.y + enemy.height / 2,
+            12
+          )
+          score += 20  // 波次敌人分数更高
+          waveManager.waveEnemies.splice(i, 1)
+        }
+
+        return true  // 武器命中
+      }
+    }
+    return false
+  }
+
+  static $tick (stage: Stage, deltaTime: number) {
+    const player = Player1.player
+    if (!player) return
+
+    // 更新波次计时器
+    waveManager.update(stage, player, deltaTime)
+
+    // 更新和绘制冲锋敌人
+    waveManager.tickEnemies(stage, deltaTime)
+
+    // 检测与玩家碰撞
+    for (const enemy of waveManager.waveEnemies) {
+      Waves.detectPlayer(enemy)
+    }
+  }
+
+  static $reset () {
+    waveManager.reset()
   }
 }
 
@@ -818,31 +906,41 @@ class Weapons {
 
         // If weapon hits some enemy.
         let weaponDestroyed = false
-        for (let k = 0, enemyLength = Enemys.enemys.length; k < enemyLength; k++) {
-          const enemy = Enemys.enemys[k]
-          if (!enemy || enemy.isDead) { continue }
 
-          const startX = enemy.x + enemy.paddingX
-          const startY = enemy.y + enemy.paddingY
-          const endX = enemy.x + enemy.width - enemy.paddingX
-          const endY = enemy.y + enemy.height - enemy.paddingY
+        // 先检测冲锋敌人
+        if (Waves.checkWeaponHit(weapon)) {
+          weapons.splice(j, 1)
+          weaponDestroyed = true
+        }
 
-          if (
-            (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
-            (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
-          ) {
-            enemy.hp -= weapon.attack
+        // 再检测普通敌人
+        if (!weaponDestroyed) {
+          for (let k = 0, enemyLength = Enemys.enemys.length; k < enemyLength; k++) {
+            const enemy = Enemys.enemys[k]
+            if (!enemy || enemy.isDead) { continue }
 
-            // 被打中时出血效果
-            Effects.spawnBlood(
-              weapon.x,
-              weapon.y,
-              6  // 较少的血液粒子
-            )
+            const startX = enemy.x + enemy.paddingX
+            const startY = enemy.y + enemy.paddingY
+            const endX = enemy.x + enemy.width - enemy.paddingX
+            const endY = enemy.y + enemy.height - enemy.paddingY
 
-            weapons.splice(j, 1)
-            weaponDestroyed = true
-            break
+            if (
+              (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
+              (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
+            ) {
+              enemy.hp -= weapon.attack
+
+              // 被打中时出血效果
+              Effects.spawnBlood(
+                weapon.x,
+                weapon.y,
+                6  // 较少的血液粒子
+              )
+
+              weapons.splice(j, 1)
+              weaponDestroyed = true
+              break
+            }
           }
         }
 
@@ -949,6 +1047,7 @@ class Game {
     level = DEFAULT_LEVEL
     score = DEFAULT_SCORE
     Enemys.$reset()
+    Waves.$reset()
     Weapons.$reset()
     SpecialItems.$reset()
     Effects.$reset()

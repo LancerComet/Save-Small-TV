@@ -1,6 +1,7 @@
 import { Enemy } from './base'
 import { Sprite22 } from './22'
 import { Sprite33 } from './33'
+import { FireballEnemy } from './fireball'
 import { floor, rand } from '../../utils'
 
 const ENEMY_TYPES = [
@@ -21,5 +22,6 @@ export {
   Enemy,
   Sprite22,
   Sprite33,
+  FireballEnemy,
   getRandomEnemy
 }

@@ -1,133 +1,76 @@
-import { Sprite } from '../../../core/sprite'
-import { bitmapsToTextures } from '../../../core/utils'
-import { rand, floor } from '../../utils'
+import { rand } from '../../utils'
 
-const WIDTH = 4
-const HEIGHT = 4
-
-// 血液颜色 - 多种红色调
-const BLOOD_COLORS: TColorMap[] = [
-  {
-    '0': 'transparent',
-    '1': '#8b0000',  // 深红
-    '2': '#cc0000'   // 亮红
-  },
-  {
-    '0': 'transparent',
-    '1': '#a00000',
-    '2': '#ff0000'
-  },
-  {
-    '0': 'transparent',
-    '1': '#660000',
-    '2': '#990000'
-  }
-]
-
-// 不同形状的血液粒子
-const BLOOD_BITMAPS: TBitmaps = [
-  // 小点
-  [
-    '0', '0', '0', '0',
-    '0', '1', '2', '0',
-    '0', '2', '1', '0',
-    '0', '0', '0', '0',
-  ],
-  // 斜向
-  [
-    '0', '0', '0', '1',
-    '0', '0', '2', '0',
-    '0', '1', '0', '0',
-    '2', '0', '0', '0',
-  ],
-  // 十字
-  [
-    '0', '1', '0', '0',
-    '1', '2', '1', '0',
-    '0', '1', '0', '0',
-    '0', '0', '0', '0',
-  ],
-  // 单点
-  [
-    '0', '0', '0', '0',
-    '0', '0', '0', '0',
-    '0', '0', '2', '0',
-    '0', '0', '0', '0',
-  ],
-  // 双点
-  [
-    '0', '0', '0', '0',
-    '0', '1', '0', '2',
-    '0', '0', '0', '0',
-    '0', '0', '0', '0',
-  ]
+// 血液颜色数组 - 直接使用颜色字符串
+const BLOOD_COLORS = [
+  '#8b0000',  // 深红
+  '#cc0000',  // 亮红
+  '#a00000',
+  '#ff0000',
+  '#660000',
+  '#990000'
 ]
 
 /**
- * 单个血液粒子
+ * 轻量级血液粒子 - 不继承 Sprite，直接绘制
  */
-class BloodParticle extends Sprite {
-  width = WIDTH
-  height = HEIGHT
+class BloodParticle {
+  // 位置
+  x: number
+  y: number
 
-  // 速度向量 (pixels per second at 60fps baseline)
-  velocityX: number = 0
-  velocityY: number = 0
+  // 大小 (2-4像素的小方块)
+  size: number
+
+  // 颜色
+  color: string
+
+  // 速度向量 (pixels per second)
+  velocityX: number
+  velocityY: number
 
   // 重力 (pixels per second squared)
   gravity: number = 600
 
   // 生命周期 (秒)
-  lifetime: number = 1  // 约1秒
+  lifetime: number
   age: number = 0
 
   // 是否已消亡
   isDead: boolean = false
 
-  // 摩擦力系数 (per second)
+  // 摩擦力系数
   friction: number = 5
 
   constructor (x: number, y: number, velocityX: number, velocityY: number) {
-    super()
-
-    // 随机选择颜色和形状
-    const colorIndex = floor(rand() * BLOOD_COLORS.length)
-    const bitmapIndex = floor(rand() * BLOOD_BITMAPS.length)
-
-    this.textures = bitmapsToTextures(
-      WIDTH,
-      HEIGHT,
-      [BLOOD_BITMAPS[bitmapIndex]],
-      BLOOD_COLORS[colorIndex]
-    )
-
     this.x = x
     this.y = y
-    // 将速度转换为 pixels per second
-    this.velocityX = velocityX * 60
+    this.velocityX = velocityX * 60  // 转换为 pixels per second
     this.velocityY = velocityY * 60
 
-    // 随机生命周期 (0.5-1.5秒)
-    this.lifetime = 0.5 + rand() * 1.0
+    // 随机大小 2-4 像素
+    this.size = 2 + Math.floor(rand() * 3)
 
-    this.TEXTURE_CHANGING_COUNTDOWN = false
+    // 随机颜色
+    this.color = BLOOD_COLORS[Math.floor(rand() * BLOOD_COLORS.length)]
+
+    // 随机生命周期 0.5-1.5秒
+    this.lifetime = 0.5 + rand() * 1.0
   }
 
   /**
    * 更新粒子状态
-   * @param deltaTime - 帧间隔时间（秒）
    */
   update (deltaTime: number) {
     if (this.isDead) return
 
-    // 应用速度 (乘以 deltaTime)
+    // 应用速度
     this.x += this.velocityX * deltaTime
     this.y += this.velocityY * deltaTime
 
     // 应用重力
     this.velocityY += this.gravity * deltaTime
 
-    // 应用摩擦力 (指数衰减)
+    // 应用摩擦力
     const frictionFactor = Math.exp(-this.friction * deltaTime)
     this.velocityX *= frictionFactor
     this.velocityY *= frictionFactor
@@ -140,52 +83,43 @@ class BloodParticle extends Sprite {
       this.isDead = true
     }
   }
+
+  /**
+   * 直接绘制到 context
+   */
+  draw (ctx: CanvasRenderingContext2D, screenX: number, screenY: number) {
+    ctx.fillStyle = this.color
+    ctx.fillRect(screenX, screenY, this.size, this.size)
+  }
 }
 
 /**
- * 血液效果管理器
- * 用于在指定位置生成一组血液粒子
+ * 血液效果工厂类
  */
 class BloodEffect {
-  /**
-   * 在指定位置生成血液粒子
-   *
-   * @param x - 中心X坐标
-   * @param y - 中心Y坐标
-   * @param count - 粒子数量
-   * @param spread - 扩散强度
-   * @returns 生成的粒子数组
-   */
   static create (x: number, y: number, count: number = 8, spread: number = 3): BloodParticle[] {
     const particles: BloodParticle[] = []
 
     for (let i = 0; i < count; i++) {
-      // 随机速度向量（向四周扩散）
       const angle = rand() * Math.PI * 2
       const speed = rand() * spread + 1
 
       const velocityX = Math.cos(angle) * speed
-      const velocityY = Math.sin(angle) * speed - 1  // 稍微向上偏移
+      const velocityY = Math.sin(angle) * speed - 1
 
-      // 随机起始位置偏移
       const offsetX = (rand() - 0.5) * 8
       const offsetY = (rand() - 0.5) * 8
 
-      const particle = new BloodParticle(
+      particles.push(new BloodParticle(
         x + offsetX,
         y + offsetY,
         velocityX,
         velocityY
-      )
-
-      particles.push(particle)
+      ))
     }
 
     return particles
   }
 }
 
-export {
-  BloodParticle,
-  BloodEffect
-}
+export { BloodParticle, BloodEffect }

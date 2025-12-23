@@ -26,8 +26,9 @@ const ITEM_LIFETIME = 10  // seconds
 // Speed multiplier for 60fps baseline
 const BASE_FPS = 60
 
-const DEFAULT_LEVEL = 100
+const DEFAULT_LEVEL = 1
 const DEFAULT_SCORE = 0
+const SCORE_PER_LEVEL = 100  // 每100分升一级
 
 let score = DEFAULT_SCORE
 let level = DEFAULT_LEVEL
@@ -259,6 +260,12 @@ class Enemys {
         // 增加分数
         score += 10
 
+        // 检查是否升级
+        const newLevel = Math.floor(score / SCORE_PER_LEVEL) + 1
+        if (newLevel > level) {
+          level = newLevel
+        }
+
         Enemys.enemys.splice(
           Enemys.enemys.indexOf(enemy), 1
         )
@@ -382,6 +389,8 @@ class Effects {
    * @memberof Effects
    */
   static $tick (stage: Stage, deltaTime: number) {
+    const ctx = stage.context
+
     // 处理血液粒子
     for (let i = Effects.bloodParticles.length - 1; i >= 0; i--) {
       const particle = Effects.bloodParticles[i]
@@ -395,11 +404,7 @@ class Effects {
       }
 
       const [screenX, screenY] = stage.camera.toScreen(particle.x, particle.y)
-      stage.context.drawImage(
-        particle.offscreen.canvasElement,
-        screenX,
-        screenY
-      )
+      particle.draw(ctx, screenX, screenY)
     }
 
     // 处理爆炸粒子
@@ -415,11 +420,7 @@ class Effects {
       }
 
       const [screenX, screenY] = stage.camera.toScreen(particle.x, particle.y)
-      stage.context.drawImage(
-        particle.offscreen.canvasElement,
-        screenX,
-        screenY
-      )
+      particle.draw(ctx, screenX, screenY)
     }
   }
 

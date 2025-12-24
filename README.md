@@ -2,7 +2,7 @@
 
 > A pixel-style shooting game built with TypeScript and Canvas 2D.
 
-![Game Preview](https://img.shields.io/badge/Game-Play%20Now-brightgreen)
+![Screenshot](screenshot.png)
 
 [Play it online](https://lancercomet.github.io/Save-Small-TV/)
 

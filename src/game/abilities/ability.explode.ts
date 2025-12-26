@@ -17,7 +17,7 @@ interface IExplodeConfig {
 
 const DEFAULT_CONFIG: IExplodeConfig = {
   fragmentCount: 12,
-  fragmentSpeed: 3,
+  fragmentSpeed: 180, // pixels per second
   fragmentDamage: 20
 }
 

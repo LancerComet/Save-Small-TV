@@ -26,7 +26,7 @@ interface IBurstConfig {
 const DEFAULT_CONFIG: IBurstConfig = {
   cooldown: 3,
   bulletCount: 8,
-  bulletSpeed: 2.5,
+  bulletSpeed: 150, // pixels per second
   bulletDamage: 8,
   spreadAngle: 0, // 0 = 360度圆形
   aimAtTarget: false,

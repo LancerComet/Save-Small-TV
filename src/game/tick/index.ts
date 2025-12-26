@@ -4,10 +4,10 @@
  */
 
 import { Stage } from '../../core/stage'
-
+import { IProjectile } from '../abilities'
 import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
-import { BloodEffect, BloodParticle, ExplosionEffect, ExplosionParticle, ParticleBase } from '../sprites/effects'
+import { BloodEffect, ExplosionEffect, ParticleBase } from '../sprites/effects'
 import { Enemy, getRandomEnemy } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { SpecialItemBase } from '../sprites/special-items/defines/_base.ts'
@@ -20,7 +20,6 @@ import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
 import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
-import { IProjectile } from '../abilities'
 import { floor, rand, checkSpriteCollision, checkPointCollision } from '../utils'
 import { waveManager } from '../waves'
 
@@ -39,6 +38,7 @@ const SCORE_PER_LEVEL = 100 // 每100分升一级
 let score = DEFAULT_SCORE
 let level = DEFAULT_LEVEL
 let gameOver = false
+let gameTime = 0 // 游戏时间（秒）
 
 let stageWidth: number = null
 let stageHeight: number = null
@@ -57,11 +57,14 @@ function tick (stage: Stage, deltaTime: number) {
 
   Init.$tick(stage)
 
+  // 更新游戏时间
+  gameTime += deltaTime
+
   // Draw space background first (with parallax)
   spaceBackground.update()
   spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
 
-  Enemys.$tick(stage, deltaTime)
+  Enemies.$tick(stage, deltaTime)
   Waves.$tick(stage, deltaTime) // 波次系统（包含 Boss）
   EnemyProjectiles.$tick(stage, deltaTime) // 敌人投射物
   Effects.$tick(stage, deltaTime)
@@ -126,49 +129,49 @@ class Init {
 }
 
 /**
- * Enemys.
+ * Enemies.
  *
  * @class Enemy
  */
-class Enemys {
-  static enemys: Enemy[] = []
+class Enemies {
+  static enemies: Enemy[] = []
   static $genEnemyCountdown = GEN_ENEMY_INTERVAL
 
   /**
-   * Generate enemys.
+   * Generate enemies.
    *
    * @static
    * @param {Stage} stage
    * @param {number} deltaTime
    * @memberof Enemy
    */
-  static genEnemys (stage: Stage, deltaTime: number) {
-    const enemys = Enemys.enemys
+  static genEnemies (stage: Stage, deltaTime: number) {
+    const enemies = Enemies.enemies
 
     const maxEnemies = Math.floor(ENERMY_BASE_COUNT + level * ENERMY_INCREMENT_RATIO)
-    if (enemys.length >= maxEnemies) {
+    if (enemies.length >= maxEnemies) {
       return
     }
 
-    if (Enemys.$genEnemyCountdown > 0) {
-      Enemys.$genEnemyCountdown -= deltaTime
+    if (Enemies.$genEnemyCountdown > 0) {
+      Enemies.$genEnemyCountdown -= deltaTime
       return
     }
 
     // 一次生成多个敌人，直到达到上限
-    const toSpawn = Math.min(ENEMIES_PER_SPAWN, maxEnemies - enemys.length)
+    const toSpawn = Math.min(ENEMIES_PER_SPAWN, maxEnemies - enemies.length)
     for (let i = 0; i < toSpawn; i++) {
       const EnemyType = getRandomEnemy()
       const enemy = new EnemyType()
 
-      const startPosition = Enemys.createStartPosition(stage)
+      const startPosition = Enemies.createStartPosition(stage)
       enemy.x = startPosition[0]
       enemy.y = startPosition[1]
 
-      enemys.push(enemy)
+      enemies.push(enemy)
     }
 
-    Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+    Enemies.$genEnemyCountdown = GEN_ENEMY_INTERVAL
   }
 
   /**
@@ -279,8 +282,8 @@ class Enemys {
           level = newLevel
         }
 
-        Enemys.enemys.splice(
-          Enemys.enemys.indexOf(enemy), 1
+        Enemies.enemies.splice(
+          Enemies.enemies.indexOf(enemy), 1
         )
       }
       return
@@ -322,14 +325,14 @@ class Enemys {
    * @memberof Enemy
    */
   static $tick (stage: Stage, deltaTime: number) {
-    Enemys.genEnemys(stage, deltaTime)
+    Enemies.genEnemies(stage, deltaTime)
 
-    for (let i = 0, length = Enemys.enemys.length; i < length; i++) {
-      const enemy = Enemys.enemys[i]
+    for (let i = 0, length = Enemies.enemies.length; i < length; i++) {
+      const enemy = Enemies.enemies[i]
       if (!enemy) { continue }
-      Enemys.detectPlayer(enemy)
-      Enemys.autoMove(enemy, deltaTime)
-      Enemys.draw(stage, enemy)
+      Enemies.detectPlayer(enemy)
+      Enemies.autoMove(enemy, deltaTime)
+      Enemies.draw(stage, enemy)
     }
   }
 
@@ -341,7 +344,7 @@ class Enemys {
    * @param {WeaponBase} weapon
    * @param {Enemy} enemy
    * @returns {boolean} 是否命中
-   * @memberof Enemys
+   * @memberof Enemies
    */
   static checkWeaponHitEnemy (weapon: WeaponBase, enemy: Enemy): boolean {
     if (!enemy || enemy.isDead) return false
@@ -379,8 +382,8 @@ class Enemys {
    * @memberof Enemy
    */
   static $reset () {
-    Enemys.enemys = []
-    Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+    Enemies.enemies = []
+    Enemies.$genEnemyCountdown = GEN_ENEMY_INTERVAL
     EnemyProjectiles.$reset()
   }
 }
@@ -397,7 +400,7 @@ class EnemyProjectiles {
    */
   static collectFromEnemies () {
     // 收集普通敌人的投射物
-    for (const enemy of Enemys.enemys) {
+    for (const enemy of Enemies.enemies) {
       const newProjectiles = enemy.collectProjectiles()
       EnemyProjectiles.projectiles.push(...newProjectiles)
     }
@@ -686,7 +689,9 @@ class SpecialItems {
    * @memberof SpecialItems
    */
   static detectPickup (item: SpecialItemBase) {
-    if (item.isPickedUp) { return }
+    if (item.isPickedUp) {
+      return
+    }
 
     const startX = item.x
     const startY = item.y
@@ -729,11 +734,12 @@ class SpecialItems {
       case SpecialItemType.SHOTGUN:
         player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION, true)
         break
-      case SpecialItemType.HEAL:
+      case SpecialItemType.HEAL: {
         // 恢复 30% 最大生命值
         const healAmount = Math.ceil(player.maxHp * 0.3)
         player.hp = Math.min(player.hp + healAmount, player.maxHp)
         break
+      }
       default:
         break
     }
@@ -1070,11 +1076,11 @@ class Weapons {
 
         // 再检测普通敌人
         if (!weaponDestroyed) {
-          for (let k = 0, enemyLength = Enemys.enemys.length; k < enemyLength; k++) {
-            const enemy = Enemys.enemys[k]
+          for (let k = 0, enemyLength = Enemies.enemies.length; k < enemyLength; k++) {
+            const enemy = Enemies.enemies[k]
 
             // 使用公共的武器碰撞检测方法
-            if (Enemys.checkWeaponHitEnemy(weapon, enemy)) {
+            if (Enemies.checkWeaponHitEnemy(weapon, enemy)) {
               weapons.splice(j, 1)
               weaponDestroyed = true
               break
@@ -1118,6 +1124,19 @@ class UI {
   static printTitle (stage: Stage) {
     // 左上角版本信息
     stage.printText('Save small TV 0.4', 4, 10, 6)
+  }
+
+  static printTimer (stage: Stage) {
+    // 屏幕上方正中间显示游戏时间
+    const totalSeconds = Math.floor(gameTime)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    const timeText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    const fontSize = 8
+    const textWidth = stage.measureText(timeText, fontSize)
+    const x = (stageWidth - textWidth) / 2
+    const y = 10
+    stage.printText(timeText, x, y, fontSize)
   }
 
   static printScore (stage: Stage) {
@@ -1277,6 +1296,7 @@ class UI {
 
   static $tick (stage: Stage) {
     UI.printTitle(stage)
+    UI.printTimer(stage)
     UI.printScore(stage)
     UI.printHPBar(stage)
     UI.printWeaponInfo(stage)
@@ -1307,7 +1327,8 @@ class Game {
     gameOver = false
     level = DEFAULT_LEVEL
     score = DEFAULT_SCORE
-    Enemys.$reset()
+    gameTime = 0
+    Enemies.$reset()
     Waves.$reset()
     Weapons.$reset()
     SpecialItems.$reset()
@@ -1316,8 +1337,8 @@ class Game {
   }
 
   static $gameInWaiting (stage: Stage) {
-    Init.$tick(stage) // 更新尺寸
-    spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y) // 绘制背景
+    Init.$tick(stage)
+    spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
     UI.$printGameOver(stage)
     Game.waitRestart(stage)
   }

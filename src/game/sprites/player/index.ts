@@ -5,7 +5,9 @@ import { WeaponBase } from '../weapon/defines/_base.ts'
 import { Bullet } from '../weapon/defines/bullet.ts'
 import { PowerBullet } from '../weapon/defines/power-bullet.ts'
 import { WeaponType } from '../weapon/types.ts'
-import { PLAYER_MAX_HP, PLAYER_INVINCIBLE_TIME } from '../../config'
+
+const PLAYER_INITIAL_HP = 100
+const PLAYER_INVINCIBLE_TIME = 1.5 // 受伤后无敌时间（秒）
 
 const WIDTH = 8
 const HEIGHT = 8
@@ -164,7 +166,7 @@ class SmallTV extends Sprite {
    * @type {number}
    * @memberof SmallTV
    */
-  maxHp: number = PLAYER_MAX_HP
+  maxHp: number = PLAYER_INITIAL_HP
 
   /**
    * 无敌时间剩余（秒）
@@ -308,7 +310,7 @@ class SmallTV extends Sprite {
    * @memberof SmallTV
    */
   reset () {
-    this.hp = PLAYER_MAX_HP
+    this.hp = PLAYER_INITIAL_HP
     this.invincibleTimer = 0
     this.weaponDuration = 0
     this.currentWeaponType = WeaponType.BULLET
@@ -342,7 +344,7 @@ class SmallTV extends Sprite {
     super()
     this.x = 0
     this.y = 0
-    this.hp = PLAYER_MAX_HP
+    this.hp = PLAYER_INITIAL_HP
     this.speed = 60
     this.paddingX = 1 // 缩小左右碰撞区域
     this.paddingY = 2 // 顶部天线不算碰撞区域

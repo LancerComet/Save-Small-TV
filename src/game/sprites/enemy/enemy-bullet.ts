@@ -109,9 +109,10 @@ class HomingBullet implements IProjectile {
         const targetVx = (dx / dist) * this.speed
         const targetVy = (dy / dist) * this.speed
 
-        // 平滑转向
-        this.vx += (targetVx - this.vx) * this.turnSpeed
-        this.vy += (targetVy - this.vy) * this.turnSpeed
+        // 平滑转向（考虑 deltaTime）
+        const lerpFactor = 1 - Math.exp(-this.turnSpeed * deltaTime)
+        this.vx += (targetVx - this.vx) * lerpFactor
+        this.vy += (targetVy - this.vy) * lerpFactor
       }
     }
 

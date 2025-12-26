@@ -70,7 +70,7 @@ const DIRECTION_TEXTURE_MAPPING = {
 const WIDTH = 8
 const HEIGHT = 8
 const SPEED = 120
-const MAX_DISTANCE = 120
+const MAX_DISTANCE = 200
 
 /**
  * PowerBullet - 强力子弹

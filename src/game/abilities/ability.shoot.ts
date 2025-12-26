@@ -22,7 +22,7 @@ interface IShootConfig {
 
 const DEFAULT_CONFIG: IShootConfig = {
   cooldown: 2,
-  bulletSpeed: 3,
+  bulletSpeed: 180, // pixels per second
   bulletDamage: 10,
   bulletSize: 4,
   bulletColor: '#ff0000'

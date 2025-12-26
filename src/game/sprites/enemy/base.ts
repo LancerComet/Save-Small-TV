@@ -1,7 +1,6 @@
 import { Sprite } from '../../../core/sprite'
-import { IBehavior, ChaseBehavior } from '../../behaviors'
 import { IAbility, IProjectile } from '../../abilities'
-import { ENEMY_ATTACK } from '../../config'
+import { IBehavior, ChaseBehavior } from '../../behaviors'
 
 class Enemy extends Sprite {
   /**
@@ -38,7 +37,7 @@ class Enemy extends Sprite {
   /**
    * 敌人的攻击力
    */
-  attack: number = ENEMY_ATTACK.DEFAULT
+  attack: number = 20
 
   /**
    * 敌人的移动行为

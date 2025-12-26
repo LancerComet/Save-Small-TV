@@ -3,9 +3,9 @@
  * 发射会追踪目标的子弹
  */
 
-import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
 import { HomingBullet } from '../sprites/enemy/enemy-bullet'
-import { getDistance, getDirection } from '../utils/collision'
+import { getDistance, getDirection } from '../utils'
+import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
 
 interface IHomingConfig {
   /** 冷却时间（秒） */
@@ -22,9 +22,9 @@ interface IHomingConfig {
 
 const DEFAULT_CONFIG: IHomingConfig = {
   cooldown: 4,
-  bulletSpeed: 1.5,
+  bulletSpeed: 90, // pixels per second
   bulletDamage: 15,
-  turnSpeed: 0.03,
+  turnSpeed: 2, // radians per second adjustment
   lifetime: 6
 }
 

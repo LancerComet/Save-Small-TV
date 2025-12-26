@@ -75,7 +75,7 @@ const DIRECTION_BASE_ANGLE: Record<SpriteDirection, number> = {
 const WIDTH = 8
 const HEIGHT = 8
 const SPEED = 180
-const MAX_DISTANCE = 75 // 射程 (+50%)
+const MAX_DISTANCE = 150
 const SPREAD_ANGLE = 22.5 // 散射角度（度）
 
 /**

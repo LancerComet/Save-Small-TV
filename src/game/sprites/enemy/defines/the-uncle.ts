@@ -1,14 +1,8 @@
-/**
- * Uncle Enemy - 公务员大叔 Boss
- * 每60秒出现一次，拥有四种能力
- * 穿着西装、提着公文包的危险公务员
- */
-
-import { SpriteBitmaps, SpriteColorMap } from '../../../core/sprite/types'
-import { bitmapsToTextures } from '../../../core/utils'
-import { ShootAbility, BurstAbility, HomingAbility, ExplodeAbility } from '../../abilities'
-import { ChaseBehavior } from '../../behaviors'
-import { Enemy } from './base'
+import { SpriteBitmaps, SpriteColorMap } from '../../../../core/sprite/types.ts'
+import { bitmapsToTextures } from '../../../../core/utils'
+import { ShootAbility, BurstAbility, HomingAbility, ExplodeAbility } from '../../../abilities'
+import { ChaseBehavior } from '../../../behaviors'
+import { Enemy } from '../base.ts'
 
 const WIDTH = 32
 const HEIGHT = 32
@@ -124,13 +118,12 @@ const BITMAPS: SpriteBitmaps = [
 ]
 
 /**
- * Uncle Enemy - 穿西装提公文包的公务员大叔
- * 带有四种能力的强力敌人
+ * TheUncle - 鼠鼠.
  */
-class UncleEnemy extends Enemy {
-  width = WIDTH
-  height = HEIGHT
-  textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+class TheUncle extends Enemy {
+  readonly width = WIDTH
+  readonly height = HEIGHT
+  readonly textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
     super()
@@ -156,16 +149,16 @@ class UncleEnemy extends Enemy {
     // 添加四种能力
     // 1. 普通射击 - 快速单发（公文攻击）
     this.addAbility(new ShootAbility({
-      cooldown: 1.5,
+      cooldown: 2.5,
       bulletSpeed: 100,
       bulletDamage: 15,
       bulletSize: 5,
-      bulletColor: '#1a1a2e' // 深色西装色
+      bulletColor: '#f6d4bc'
     }))
 
     // 2. 爆发射击 - 圆形弹幕（官僚主义）
     this.addAbility(new BurstAbility({
-      cooldown: 4,
+      cooldown: 5,
       bulletCount: 12,
       bulletSpeed: 120,
       bulletDamage: 10,
@@ -193,6 +186,6 @@ class UncleEnemy extends Enemy {
 }
 
 export {
-  UncleEnemy,
+  TheUncle,
   UNCLE_MAX_HP
 }

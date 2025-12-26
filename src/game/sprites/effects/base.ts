@@ -1,9 +1,3 @@
-/**
- * Particle Base - 粒子基类
- * 
- * 所有粒子效果的基类，统一粒子的基本逻辑
- */
-
 import { rand } from '../../utils'
 
 /**
@@ -27,8 +21,11 @@ interface IParticleConfig {
 }
 
 /**
- * 粒子基类
+ * Particle Base - 粒子基类
+ *
+ * 所有粒子效果的基类，统一粒子的基本逻辑
  */
+
 abstract class ParticleBase {
   // 位置
   x: number
@@ -56,30 +53,6 @@ abstract class ParticleBase {
 
   // 是否已消亡
   isDead: boolean = false
-
-  constructor (
-    x: number,
-    y: number,
-    velocityX: number,
-    velocityY: number,
-    config: IParticleConfig
-  ) {
-    this.x = x
-    this.y = y
-    this.velocityX = velocityX * 60 // 转换为 pixels per second
-    this.velocityY = velocityY * 60
-    this.gravity = config.gravity
-    this.friction = config.friction
-
-    // 随机大小
-    this.size = config.minSize + Math.floor(rand() * (config.maxSize - config.minSize + 1))
-
-    // 随机颜色
-    this.color = config.colors[Math.floor(rand() * config.colors.length)]
-
-    // 随机生命周期
-    this.lifetime = config.minLifetime + rand() * (config.maxLifetime - config.minLifetime)
-  }
 
   /**
    * 更新粒子状态
@@ -118,6 +91,30 @@ abstract class ParticleBase {
     ctx.fillRect(screenX, screenY, this.size, this.size)
     ctx.globalAlpha = 1
   }
+
+  protected constructor (
+    x: number,
+    y: number,
+    velocityX: number,
+    velocityY: number,
+    config: IParticleConfig
+  ) {
+    this.x = x
+    this.y = y
+    this.velocityX = velocityX * 60 // 转换为 pixels per second
+    this.velocityY = velocityY * 60
+    this.gravity = config.gravity
+    this.friction = config.friction
+
+    // 随机大小
+    this.size = config.minSize + Math.floor(rand() * (config.maxSize - config.minSize + 1))
+
+    // 随机颜色
+    this.color = config.colors[Math.floor(rand() * config.colors.length)]
+
+    // 随机生命周期
+    this.lifetime = config.minLifetime + rand() * (config.maxLifetime - config.minLifetime)
+  }
 }
 
 /**
@@ -151,5 +148,11 @@ abstract class ParticleFactory {
   }
 }
 
-export type { IParticleConfig }
-export { ParticleBase, ParticleFactory }
+export {
+  ParticleBase,
+  ParticleFactory
+}
+
+export type {
+  IParticleConfig
+}

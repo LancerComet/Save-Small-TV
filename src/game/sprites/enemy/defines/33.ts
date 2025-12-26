@@ -1,6 +1,6 @@
-import { SpriteColorMap, SpriteBitmaps } from '../../../core/sprite/types.ts'
-import { bitmapsToTextures } from '../../../core/utils'
-import { Enemy } from './base'
+import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
+import { bitmapsToTextures } from '../../../../core/utils'
+import { Enemy } from '../base.ts'
 
 const WIDTH = 16
 const HEIGHT = 16

@@ -1,7 +1,7 @@
 import { ParticleBase, ParticleFactory } from './base'
 import type { IParticleConfig } from './base'
-import { BloodParticle, BloodEffect } from './effect.blood'
-import { ExplosionParticle, ExplosionEffect } from './effect.explosion'
+import { BloodParticle, BloodEffect } from './defines/effect.blood.ts'
+import { ExplosionParticle, ExplosionEffect } from './defines/effect.explosion.ts'
 
 export type { IParticleConfig }
 export {

@@ -1,10 +1,5 @@
-/**
- * Burst Ability - 爆发射击能力
- * 一次发射多发子弹（扇形或圆形）
- */
-
-import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
 import { EnemyBullet } from '../sprites/enemy/enemy-bullet'
+import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
 
 interface IBurstConfig {
   /** 冷却时间（秒） */
@@ -33,6 +28,10 @@ const DEFAULT_CONFIG: IBurstConfig = {
   bulletColor: '#ff6600'
 }
 
+/**
+ * Burst Ability - 爆发射击能力
+ * 一次发射多发子弹（扇形或圆形）
+ */
 class BurstAbility extends AbilityBase {
   name = 'burst'
   private config: IBurstConfig

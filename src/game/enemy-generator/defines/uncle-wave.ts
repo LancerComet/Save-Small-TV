@@ -1,6 +1,6 @@
 import { Stage } from '../../../core/stage'
 import { ChaseBehavior } from '../../behaviors'
-import { Enemy, UncleEnemy } from '../../sprites/enemy'
+import { Enemy, TheUncle } from '../../sprites/enemy'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 
 /**
@@ -16,7 +16,7 @@ class UncleWaveStrategy implements IEnemyGenStrategy {
     spacing: 0,
     speed: 30,
     interval: 60,
-    enemyType: UncleEnemy
+    enemyType: TheUncle
   }
 
   execute (stage: Stage): Enemy[] {
@@ -27,7 +27,7 @@ class UncleWaveStrategy implements IEnemyGenStrategy {
 
     const { speed } = this.config
 
-    const uncle = new UncleEnemy()
+    const uncle = new TheUncle()
     uncle.x = bounds.left + stageSize[0] / 2 - uncle.width / 2
     uncle.y = bounds.top - uncle.height - 20
     uncle.setBehavior(new ChaseBehavior({ speed }))

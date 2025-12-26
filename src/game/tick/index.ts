@@ -9,13 +9,12 @@ import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
 import { enemyGenerator } from '../enemy-generator'
 import { BloodEffect, ExplosionEffect, ParticleBase } from '../sprites/effects'
-import { Enemy, getRandomEnemy } from '../sprites/enemy'
+import { Enemy, Sprite22, Sprite33 } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
-import { SpecialItemBase } from '../sprites/special-items/defines/_base.ts'
 import { PowerBulletItem } from '../sprites/special-items/defines/power-bullet.ts'
 import { ShotgunItem } from '../sprites/special-items/defines/shotgun.ts'
 import { SpecialItemType } from '../sprites/special-items/types.ts'
-import { getRandomItem } from '../sprites/special-items/utils.ts'
+import { getRandomItem, ISpecialItem } from '../sprites/special-items/utils.ts'
 import { WeaponBase } from '../sprites/weapon/defines/_base.ts'
 import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
@@ -137,6 +136,14 @@ class Enemies {
   static enemies: Enemy[] = []
   static $genEnemyCountdown = GEN_ENEMY_INTERVAL
 
+  private static getRandomNormalEnemy () {
+    const ENEMY_TYPES = [
+      Sprite22,
+      Sprite33
+    ]
+    return ENEMY_TYPES[floor(rand() * ENEMY_TYPES.length)]
+  }
+
   /**
    * Generate enemies.
    *
@@ -145,7 +152,7 @@ class Enemies {
    * @param {number} deltaTime
    * @memberof Enemy
    */
-  static genEnemies (stage: Stage, deltaTime: number) {
+  static genNormalEnemies (stage: Stage, deltaTime: number) {
     const enemies = Enemies.enemies
 
     const maxEnemies = Math.floor(ENERMY_BASE_COUNT + level * ENERMY_INCREMENT_RATIO)
@@ -161,7 +168,7 @@ class Enemies {
     // 一次生成多个敌人，直到达到上限
     const toSpawn = Math.min(ENEMIES_PER_SPAWN, maxEnemies - enemies.length)
     for (let i = 0; i < toSpawn; i++) {
-      const EnemyType = getRandomEnemy()
+      const EnemyType = this.getRandomNormalEnemy()
       const enemy = new EnemyType()
 
       const startPosition = Enemies.createStartPosition(stage)
@@ -325,7 +332,7 @@ class Enemies {
    * @memberof Enemy
    */
   static $tick (stage: Stage, deltaTime: number) {
-    Enemies.genEnemies(stage, deltaTime)
+    Enemies.genNormalEnemies(stage, deltaTime)
 
     for (let i = 0, length = Enemies.enemies.length; i < length; i++) {
       const enemy = Enemies.enemies[i]
@@ -665,7 +672,7 @@ class Effects {
  * @class SpecialItems
  */
 class SpecialItems {
-  static items: SpecialItemBase[] = []
+  static items: ISpecialItem[] = []
 
   /**
    * Drop an item at specified position.
@@ -688,10 +695,10 @@ class SpecialItems {
    * Check if player picks up an item.
    *
    * @static
-   * @param {SpecialItemBase} item
+   * @param {ISpecialItem} item
    * @memberof SpecialItems
    */
-  static detectPickup (item: SpecialItemBase) {
+  static detectPickup (item: ISpecialItem) {
     if (item.isPickedUp) {
       return
     }
@@ -726,10 +733,10 @@ class SpecialItems {
    *
    * @static
    * @param {SmallTV} player
-   * @param {SpecialItemBase} item
+   * @param {ISpecialItem} item
    * @memberof SpecialItems
    */
-  static applyItemEffect (player: SmallTV, item: SpecialItemBase) {
+  static applyItemEffect (player: SmallTV, item: ISpecialItem) {
     switch (item.itemType) {
       case SpecialItemType.POWER_BULLET:
         player.switchWeapon(WeaponType.POWER_BULLET, WEAPON_DURATION, true)
@@ -752,11 +759,11 @@ class SpecialItems {
    * Update item lifetime.
    *
    * @static
-   * @param {SpecialItemBase} item
+   * @param {ISpecialItem} item
    * @param {number} deltaTime
    * @memberof SpecialItems
    */
-  static updateLifetime (item: SpecialItemBase, deltaTime: number) {
+  static updateLifetime (item: ISpecialItem, deltaTime: number) {
     if (item.isPickedUp) {
       // Remove picked up items
       SpecialItems.items.splice(SpecialItems.items.indexOf(item), 1)
@@ -775,10 +782,10 @@ class SpecialItems {
    *
    * @static
    * @param {Stage} stage
-   * @param {SpecialItemBase} item
+   * @param {ISpecialItem} item
    * @memberof SpecialItems
    */
-  static draw (stage: Stage, item: SpecialItemBase) {
+  static draw (stage: Stage, item: ISpecialItem) {
     item.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(item.x, item.y)
     stage.context.drawImage(

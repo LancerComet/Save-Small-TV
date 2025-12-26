@@ -78,10 +78,6 @@ class Enemy extends Sprite {
    */
   dropCount: number = 0
 
-  constructor () {
-    super()
-  }
-
   /**
    * 设置行为
    * @param behavior 新的行为

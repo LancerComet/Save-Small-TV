@@ -1,11 +1,11 @@
-import { rand } from '../../utils'
-import { ParticleBase, IParticleConfig } from './base'
+import { rand } from '../../../utils'
+import { ParticleBase, IParticleConfig } from '../base.ts'
 
 // 爆炸颜色数组 - 火焰色调
 const EXPLOSION_COLORS = [
-  '#ff6600',  // 橙色
-  '#ffcc00',  // 黄色
-  '#ff0000',  // 红色
+  '#ff6600', // 橙色
+  '#ffcc00', // 黄色
+  '#ff0000', // 红色
   '#ff9900',
   '#ffff00',
   '#ff3300',

@@ -1,10 +1,10 @@
-import { rand } from '../../utils'
-import { ParticleBase, IParticleConfig } from './base'
+import { rand } from '../../../utils'
+import { ParticleBase, IParticleConfig } from '../base.ts'
 
 // 血液颜色数组
 const BLOOD_COLORS = [
-  '#8b0000',  // 深红
-  '#cc0000',  // 亮红
+  '#8b0000', // 深红
+  '#cc0000', // 亮红
   '#a00000',
   '#ff0000',
   '#660000',

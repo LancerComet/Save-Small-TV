@@ -1,7 +1,7 @@
+import { Sprite } from '../../../../core/sprite'
 import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
 import { SpecialItemType } from '../types.ts'
-import { SpecialItemBase } from './_base.ts'
 
 const WIDTH = 8
 const HEIGHT = 8
@@ -41,14 +41,17 @@ const BITMAPS: SpriteBitmaps = [
  * 散弹枪道具
  * 拾取后获得散弹枪武器
  */
-class ShotgunItem extends SpecialItemBase {
+class ShotgunItem extends Sprite {
   width = WIDTH
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
+  itemType = SpecialItemType.SHOTGUN
+  lifeCountdown: number = 10
+  isPickedUp: boolean = false
+
   constructor () {
     super()
-    this.itemType = SpecialItemType.SHOTGUN
     this.paddingX = 0
     this.paddingY = 0
     this.TEXTURE_CHANGING_COUNTDOWN = 30 // 闪烁效果

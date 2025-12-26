@@ -4,6 +4,12 @@ import { IBehavior, ChaseBehavior } from '../../behaviors'
 
 class Enemy extends Sprite {
   /**
+   * 静态死亡投射物队列 - 死亡能力产生的投射物会放在这里
+   * tick 中的 EnemyProjectiles 会来收集
+   */
+  static deathProjectiles: IProjectile[] = []
+
+  /**
    * Wether this sprite is dead.
    *
    * @readonly
@@ -129,6 +135,10 @@ class Enemy extends Sprite {
     for (const ability of this.abilities) {
       ability.onDeath?.(this, target)
     }
+
+    // 立即收集死亡能力产生的投射物到静态队列
+    const deathProjectiles = this.collectProjectiles()
+    Enemy.deathProjectiles.push(...deathProjectiles)
   }
 
   /**

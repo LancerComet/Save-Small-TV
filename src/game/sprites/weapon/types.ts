@@ -3,7 +3,8 @@ import { SpriteDirection } from '../../../core/sprite/types.ts'
 enum WeaponType {
   BULLET = 'BULLET',
   POWER_BULLET = 'POWER_BULLET',
-  SHOTGUN = 'SHOTGUN'
+  SHOTGUN = 'SHOTGUN',
+  LASER = 'LASER'
 }
 
 interface IWeapon {

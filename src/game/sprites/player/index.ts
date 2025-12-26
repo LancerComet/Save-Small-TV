@@ -4,10 +4,14 @@ import { bitmapsToTextures } from '../../../core/utils'
 import { WeaponBase } from '../weapon/defines/_base.ts'
 import { Bullet } from '../weapon/defines/bullet.ts'
 import { PowerBullet } from '../weapon/defines/power-bullet.ts'
+import { Laser } from '../weapon/defines/laser.ts'
 import { WeaponType } from '../weapon/types.ts'
 
 const PLAYER_INITIAL_HP = 100
 const PLAYER_INVINCIBLE_TIME = 1.5 // 受伤后无敌时间（秒）
+const SHIELD_DURATION = 5 // 护盾持续时间（秒）
+const SPEED_BUFF_DURATION = 8 // 加速持续时间（秒）
+const SPEED_BUFF_MULTIPLIER = 1.8 // 加速倍率
 
 const WIDTH = 8
 const HEIGHT = 8
@@ -184,7 +188,52 @@ class SmallTV extends Sprite {
    * @memberof SmallTV
    */
   get isInvincible (): boolean {
-    return this.invincibleTimer > 0
+    return this.invincibleTimer > 0 || this.shieldTimer > 0
+  }
+
+  /**
+   * 护盾时间剩余（秒）
+   *
+   * @type {number}
+   * @memberof SmallTV
+   */
+  shieldTimer: number = 0
+
+  /**
+   * 是否有护盾
+   *
+   * @readonly
+   * @type {boolean}
+   * @memberof SmallTV
+   */
+  get hasShield (): boolean {
+    return this.shieldTimer > 0
+  }
+
+  /**
+   * 速度加成时间剩余（秒）
+   *
+   * @type {number}
+   * @memberof SmallTV
+   */
+  speedBuffTimer: number = 0
+
+  /**
+   * 是否有速度加成
+   *
+   * @readonly
+   * @type {boolean}
+   * @memberof SmallTV
+   */
+  get hasSpeedBuff (): boolean {
+    return this.speedBuffTimer > 0
+  }
+
+  /**
+   * 获取当前有效速度（考虑加成）
+   */
+  getEffectiveSpeed (): number {
+    return this.hasSpeedBuff ? this.speed * SPEED_BUFF_MULTIPLIER : this.speed
   }
 
   /**
@@ -247,6 +296,9 @@ class SmallTV extends Sprite {
       case WeaponType.SHOTGUN:
         this.currentWeaponClass = null // Shotgun handled specially
         break
+      case WeaponType.LASER:
+        this.currentWeaponClass = Laser
+        break
       case WeaponType.BULLET:
       default:
         this.currentWeaponClass = Bullet
@@ -302,6 +354,46 @@ class SmallTV extends Sprite {
         this.invincibleTimer = 0
       }
     }
+    if (this.shieldTimer > 0) {
+      this.shieldTimer -= deltaTime
+      if (this.shieldTimer < 0) {
+        this.shieldTimer = 0
+      }
+    }
+    if (this.speedBuffTimer > 0) {
+      this.speedBuffTimer -= deltaTime
+      if (this.speedBuffTimer < 0) {
+        this.speedBuffTimer = 0
+      }
+    }
+  }
+
+  /**
+   * 激活护盾
+   *
+   * @param {boolean} additive - 是否叠加时间
+   * @memberof SmallTV
+   */
+  activateShield (additive: boolean = true) {
+    if (additive) {
+      this.shieldTimer += SHIELD_DURATION
+    } else {
+      this.shieldTimer = SHIELD_DURATION
+    }
+  }
+
+  /**
+   * 激活速度加成
+   *
+   * @param {boolean} additive - 是否叠加时间
+   * @memberof SmallTV
+   */
+  activateSpeedBuff (additive: boolean = true) {
+    if (additive) {
+      this.speedBuffTimer += SPEED_BUFF_DURATION
+    } else {
+      this.speedBuffTimer = SPEED_BUFF_DURATION
+    }
   }
 
   /**
@@ -312,6 +404,8 @@ class SmallTV extends Sprite {
   reset () {
     this.hp = PLAYER_INITIAL_HP
     this.invincibleTimer = 0
+    this.shieldTimer = 0
+    this.speedBuffTimer = 0
     this.weaponDuration = 0
     this.currentWeaponType = WeaponType.BULLET
     this.currentWeaponClass = Bullet

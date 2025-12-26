@@ -9,16 +9,18 @@ import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
 import { enemyGenerator } from '../enemy-generator'
 import { BloodEffect, ExplosionEffect, ParticleBase } from '../sprites/effects'
-import { Enemy, Sprite22, Sprite33 } from '../sprites/enemy'
+import { Enemy, Sprite22, Sprite33, GhostEnemy } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { PowerBulletItem } from '../sprites/special-items/defines/power-bullet.ts'
 import { ShotgunItem } from '../sprites/special-items/defines/shotgun.ts'
+import { LaserItem } from '../sprites/special-items/defines/laser.ts'
 import { SpecialItemType } from '../sprites/special-items/types.ts'
 import { getRandomItem, ISpecialItem } from '../sprites/special-items/utils.ts'
 import { WeaponBase } from '../sprites/weapon/defines/_base.ts'
 import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
+import { Laser } from '../sprites/weapon/defines/laser.ts'
 import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
 import { floor, rand, checkSpriteCollision, checkPointCollision } from '../utils'
 
@@ -139,7 +141,8 @@ class Enemies {
   private static getRandomNormalEnemy () {
     const ENEMY_TYPES = [
       Sprite22,
-      Sprite33
+      Sprite33,
+      GhostEnemy
     ]
     return ENEMY_TYPES[floor(rand() * ENEMY_TYPES.length)]
   }
@@ -256,7 +259,7 @@ class Enemies {
     const player = Player.instance
 
     if (enemy.isDead) {
-      // 触发死亡能力（如爆炸）
+      // 触发死亡能力（如爆炸）- 投射物会自动收集到 Enemy.deathProjectiles
       if (!enemy.hasTriggeredDeathAbilities) {
         enemy.triggerDeathAbilities(player)
       }
@@ -363,7 +366,7 @@ class Enemies {
       Effects.spawnBlood(weapon.x, weapon.y, 6)
 
       if (enemy.isDead) {
-        // 触发死亡能力
+        // 触发死亡能力 - 投射物会自动收集到 Enemy.deathProjectiles
         if (!enemy.hasTriggeredDeathAbilities) {
           enemy.triggerDeathAbilities(Player.instance)
         }
@@ -417,6 +420,12 @@ class EnemyProjectiles {
       const newProjectiles = enemy.collectProjectiles()
       EnemyProjectiles.projectiles.push(...newProjectiles)
     }
+
+    // 收集死亡能力产生的投射物（从静态队列中取）
+    if (Enemy.deathProjectiles.length > 0) {
+      EnemyProjectiles.projectiles.push(...Enemy.deathProjectiles)
+      Enemy.deathProjectiles = []
+    }
   }
 
   /**
@@ -428,6 +437,8 @@ class EnemyProjectiles {
     // 获取相机的世界边界，加上缓冲区
     const bounds = stage.camera.getWorldBounds()
     const buffer = 50
+    const worldWidth = bounds.right - bounds.left + buffer * 2
+    const worldHeight = bounds.bottom - bounds.top + buffer * 2
 
     for (let i = EnemyProjectiles.projectiles.length - 1; i >= 0; i--) {
       const proj = EnemyProjectiles.projectiles[i]
@@ -435,6 +446,9 @@ class EnemyProjectiles {
 
       // 检查生命周期是否结束（追踪弹等有 lifetime）
       const lifetimeExpired = 'lifetime' in proj && (proj as any).lifetime <= 0
+
+      // 先调用投射物自己的 isOutOfBounds 方法（回旋镖返回后需要用这个删除）
+      const projOutOfBounds = proj.isOutOfBounds(worldWidth, worldHeight)
 
       // 使用世界边界判断出界，而不是屏幕尺寸
       const outOfBounds = (
@@ -444,7 +458,7 @@ class EnemyProjectiles {
         proj.y > bounds.bottom + buffer
       )
 
-      if (outOfBounds || lifetimeExpired) {
+      if (outOfBounds || lifetimeExpired || projOutOfBounds) {
         EnemyProjectiles.projectiles.splice(i, 1)
       }
     }
@@ -525,21 +539,35 @@ class Waves {
 
   /**
    * 检测武器与波次敌人的碰撞
+   * @param isLaser 是否为激光武器（可穿透）
    */
-  static checkWeaponHit (weapon: WeaponBase): boolean {
+  static checkWeaponHit (weapon: WeaponBase, isLaser: boolean = false): boolean {
+    let hitAny = false
+
     for (let i = enemyGenerator.waveEnemies.length - 1; i >= 0; i--) {
       const enemy = enemyGenerator.waveEnemies[i]
       if (!enemy || enemy.isDead) continue
 
+      // 激光穿透逻辑
+      if (isLaser) {
+        const laser = weapon as Laser
+        if (!laser.canHitEnemy(enemy)) continue
+      }
+
       // 使用统一碰撞检测工具
       if (checkSpriteCollision(weapon, enemy)) {
+        // 激光记录命中
+        if (isLaser) {
+          (weapon as Laser).recordHit(enemy)
+        }
+
         enemy.hp -= weapon.attack
 
         // 出血效果
         Effects.spawnBlood(weapon.x, weapon.y, 6)
 
         if (enemy.isDead) {
-          // 触发死亡能力（如爆炸碎片）
+          // 触发死亡能力（如爆炸碎片）- 投射物会自动收集到 Enemy.deathProjectiles
           if (!enemy.hasTriggeredDeathAbilities) {
             enemy.triggerDeathAbilities(Player.instance)
           }
@@ -562,10 +590,15 @@ class Waves {
           enemyGenerator.waveEnemies.splice(i, 1)
         }
 
-        return true // 武器命中
+        hitAny = true
+
+        // 非激光武器命中后立即返回
+        if (!isLaser) {
+          return true
+        }
       }
     }
-    return false
+    return hitAny
   }
 
   static $tick (stage: Stage, deltaTime: number) {
@@ -744,12 +777,23 @@ class SpecialItems {
       case SpecialItemType.SHOTGUN:
         player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION, true)
         break
+      case SpecialItemType.LASER:
+        player.switchWeapon(WeaponType.LASER, WEAPON_DURATION, true)
+        break
       case SpecialItemType.HEAL: {
         // 恢复 30% 最大生命值
         const healAmount = Math.ceil(player.maxHp * 0.3)
         player.hp = Math.min(player.hp + healAmount, player.maxHp)
         break
       }
+      case SpecialItemType.SHIELD:
+        // 激活护盾（临时无敌）
+        player.activateShield(true)
+        break
+      case SpecialItemType.SPEED_UP:
+        // 激活速度加成
+        player.activateSpeedBuff(true)
+        break
       default:
         break
     }
@@ -909,7 +953,7 @@ class Player {
 
   static move (deltaTime: number) {
     const player = Player.instance
-    const speed = player.speed * deltaTime
+    const speed = player.getEffectiveSpeed() * deltaTime
 
     // 如果有手柄模拟量输入，使用模拟量进行平滑移动
     if (player.analogMoveX !== 0 || player.analogMoveY !== 0) {
@@ -944,8 +988,8 @@ class Player {
   static draw (stage: Stage) {
     const player = Player.instance
 
-    // 无敌状态闪烁：每隔一段时间隐藏玩家
-    if (player.isInvincible) {
+    // 受伤无敌状态闪烁（护盾不闪烁）
+    if (player.invincibleTimer > 0 && !player.hasShield) {
       const blink = Math.floor(player.invincibleTimer * 10) % 2 === 0
       if (blink) {
         return // 闪烁时跳过绘制
@@ -954,6 +998,22 @@ class Player {
 
     player.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(player.x, player.y)
+
+    // 护盾状态绘制蓝色光环
+    if (player.hasShield) {
+      const ctx = stage.context
+      ctx.save()
+      ctx.strokeStyle = '#00aaff'
+      ctx.lineWidth = 2
+      const centerX = screenX + player.width / 2
+      const centerY = screenY + player.height / 2
+      const radius = Math.max(player.width, player.height) / 2 + 3
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+    }
+
     stage.context.drawImage(
       player.offscreen.canvasElement, screenX, screenY
     )
@@ -1011,6 +1071,20 @@ class Weapons {
           y: player.y
         }, player.useAnalogShooting ? player.shootAngle : undefined)
         player.weapons.push(...pellets)
+      } else if (player.currentWeaponType === WeaponType.LASER) {
+        // Laser weapon
+        const laser = new Laser(<IWeapon> {
+          direction: player.weaponDirection,
+          x: player.x,
+          y: player.y
+        })
+
+        // 如果是无极方向射击，设置角度
+        if (player.useAnalogShooting && player.shootAngle !== null) {
+          laser.setAngle(player.shootAngle)
+        }
+
+        player.weapons.push(laser)
       } else {
         // Normal or Power bullet
         const CurrentWeapon = player.currentWeaponClass
@@ -1069,7 +1143,7 @@ class Weapons {
         }
 
         // Check range limit for special weapons
-        const weaponWithRange = weapon as (PowerBullet | ShotgunPellet)
+        const weaponWithRange = weapon as (PowerBullet | ShotgunPellet | Laser)
         if (weaponWithRange.isOutOfRange && weaponWithRange.isOutOfRange()) {
           weapons.splice(j, 1)
           continue
@@ -1078,23 +1152,45 @@ class Weapons {
         // If weapon hits some enemy.
         let weaponDestroyed = false
 
+        // 检查是否为激光武器（可穿透）
+        const isLaser = weapon instanceof Laser
+
         // 先检测波次敌人
-        if (Waves.checkWeaponHit(weapon)) {
+        const waveHit = Waves.checkWeaponHit(weapon, isLaser)
+        if (waveHit && !isLaser) {
           weapons.splice(j, 1)
           weaponDestroyed = true
         }
 
         // 再检测普通敌人
-        if (!weaponDestroyed) {
+        if (!weaponDestroyed || isLaser) {
           for (let k = 0, enemyLength = Enemies.enemies.length; k < enemyLength; k++) {
             const enemy = Enemies.enemies[k]
 
-            // 使用公共的武器碰撞检测方法
-            if (Enemies.checkWeaponHitEnemy(weapon, enemy)) {
-              weapons.splice(j, 1)
-              weaponDestroyed = true
-              break
+            // 激光使用特殊穿透逻辑
+            if (isLaser) {
+              const laser = weapon as Laser
+              if (laser.canHitEnemy(enemy) && Enemies.checkWeaponHitEnemy(weapon, enemy)) {
+                laser.recordHit(enemy)
+                // 激光不会被销毁，继续检测其他敌人
+              }
+            } else {
+              // 普通武器
+              if (Enemies.checkWeaponHitEnemy(weapon, enemy)) {
+                weapons.splice(j, 1)
+                weaponDestroyed = true
+                break
+              }
             }
+          }
+        }
+
+        // 激光穿透完所有目标后检查是否应该消失
+        if (isLaser) {
+          const laser = weapon as Laser
+          if (laser.isOutOfRange()) {
+            weapons.splice(j, 1)
+            weaponDestroyed = true
           }
         }
 
@@ -1160,6 +1256,7 @@ class UI {
   static bulletIcon: Bullet = null
   static powerBulletItemIcon: PowerBulletItem = null
   static shotgunItemIcon: ShotgunItem = null
+  static laserItemIcon: LaserItem = null
 
   static getItemSprite (type: WeaponType) {
     if (type === WeaponType.POWER_BULLET) {
@@ -1174,6 +1271,12 @@ class UI {
         UI.shotgunItemIcon.updateTexture()
       }
       return UI.shotgunItemIcon
+    } else if (type === WeaponType.LASER) {
+      if (!UI.laserItemIcon) {
+        UI.laserItemIcon = new LaserItem()
+        UI.laserItemIcon.updateTexture()
+      }
+      return UI.laserItemIcon
     } else {
       // 普通子弹用子弹图标
       if (!UI.bulletIcon) {
@@ -1282,6 +1385,51 @@ class UI {
     }
   }
 
+  /**
+   * 绘制 Buff 状态指示器
+   */
+  static printBuffIndicators (stage: Stage) {
+    const player = Player.instance
+    if (!player) return
+
+    const ctx = stage.context
+    const indicatorSize = 6
+    const gap = 2
+    let offsetX = 4
+    const baseY = 24 // 在血条下方
+
+    // 护盾状态
+    if (player.hasShield) {
+      // 绘制护盾图标（蓝色圆形）
+      ctx.fillStyle = '#00aaff'
+      ctx.beginPath()
+      ctx.arc(offsetX + indicatorSize / 2, baseY + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2)
+      ctx.fill()
+      // 倒计时
+      const countdown = Math.ceil(player.shieldTimer).toString()
+      stage.printText(countdown, offsetX + indicatorSize + 1, baseY + indicatorSize, 4)
+      offsetX += indicatorSize + stage.measureText(countdown, 4) + gap + 4
+    }
+
+    // 加速状态
+    if (player.hasSpeedBuff) {
+      // 绘制加速图标（黄色闪电）
+      ctx.fillStyle = '#ffff00'
+      ctx.beginPath()
+      ctx.moveTo(offsetX + indicatorSize / 2, baseY)
+      ctx.lineTo(offsetX + 1, baseY + indicatorSize / 2)
+      ctx.lineTo(offsetX + indicatorSize / 2 - 1, baseY + indicatorSize / 2)
+      ctx.lineTo(offsetX + indicatorSize / 2 - 2, baseY + indicatorSize)
+      ctx.lineTo(offsetX + indicatorSize - 1, baseY + indicatorSize / 2 - 1)
+      ctx.lineTo(offsetX + indicatorSize / 2, baseY + indicatorSize / 2 - 1)
+      ctx.closePath()
+      ctx.fill()
+      // 倒计时
+      const countdown = Math.ceil(player.speedBuffTimer).toString()
+      stage.printText(countdown, offsetX + indicatorSize + 1, baseY + indicatorSize, 4)
+    }
+  }
+
   static $printGameOver (stage: Stage) {
     const fontSize = 8
     const lineHeight = 12
@@ -1309,6 +1457,7 @@ class UI {
     UI.printTimer(stage)
     UI.printScore(stage)
     UI.printHPBar(stage)
+    UI.printBuffIndicators(stage)
     UI.printWeaponInfo(stage)
   }
 }

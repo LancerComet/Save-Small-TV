@@ -18,3 +18,9 @@ export type { IHomingConfig } from './ability.homing'
 
 export { ExplodeAbility } from './ability.explode'
 export type { IExplodeConfig } from './ability.explode'
+
+export { BasketballAbility } from './ability.basketball'
+export type { IBasketballConfig } from './ability.basketball'
+
+export { BoomerangAbility } from './ability.boomerang'
+export type { IBoomerangConfig } from './ability.boomerang'

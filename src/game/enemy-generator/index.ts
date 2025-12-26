@@ -2,6 +2,7 @@ import { Stage } from '../../core/stage'
 import { Enemy, Sprite22 } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { HorizontalRushStrategy } from './defines/horizontal-rush'
+import { MikuWaveStrategy } from './defines/miku-wave.ts'
 import { UncleWaveStrategy } from './defines/uncle-wave.ts'
 import { VerticalRushStrategy } from './defines/vertical-rush'
 import { IEnemyGenStrategy } from './type.ts'
@@ -109,7 +110,7 @@ class EnemyGenerator {
 
       // 检查是否死亡
       if (enemy.isDead) {
-        // 触发死亡能力
+        // 触发死亡能力 - 投射物会自动收集到 Enemy.deathProjectiles
         if (!enemy.hasTriggeredDeathAbilities) {
           enemy.triggerDeathAbilities(player)
         }
@@ -180,6 +181,12 @@ class EnemyGenerator {
       interval: 60,
       speed: 30
     }))
+
+    // 初音未来 - 每10秒出现一个
+    this.addStrategy(new MikuWaveStrategy({
+      interval: 10,
+      speed: 40
+    }))
   }
 }
 
@@ -190,5 +197,6 @@ export {
   enemyGenerator,
   HorizontalRushStrategy,
   VerticalRushStrategy,
-  UncleWaveStrategy
+  UncleWaveStrategy,
+  MikuWaveStrategy
 }

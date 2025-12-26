@@ -4,6 +4,9 @@ import { SpecialItemType } from './types.ts'
 import { PowerBulletItem } from './defines/power-bullet'
 import { ShotgunItem } from './defines/shotgun'
 import { HealItem } from './defines/heal'
+import { ShieldItem } from './defines/shield'
+import { SpeedUpItem } from './defines/speed-up'
+import { LaserItem } from './defines/laser'
 
 /**
  * 道具接口
@@ -24,9 +27,12 @@ interface ItemDropConfig {
 }
 
 const ITEM_DROP_TABLE: ItemDropConfig[] = [
-  { ItemClass: PowerBulletItem, weight: 40 }, // 40%
-  { ItemClass: ShotgunItem, weight: 40 }, // 40%
-  { ItemClass: HealItem, weight: 20 } // 20% - 稀有
+  { ItemClass: PowerBulletItem, weight: 25 }, // 25%
+  { ItemClass: ShotgunItem, weight: 25 }, // 25%
+  { ItemClass: LaserItem, weight: 15 }, // 15% - 激光
+  { ItemClass: HealItem, weight: 15 }, // 15% - 恢复
+  { ItemClass: ShieldItem, weight: 10 }, // 10% - 护盾（稀有）
+  { ItemClass: SpeedUpItem, weight: 10 } // 10% - 加速（稀有）
 ]
 
 // 计算总权重

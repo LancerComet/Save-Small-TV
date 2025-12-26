@@ -6,7 +6,15 @@
 import { Stage } from '../../core/stage'
 import { IProjectile } from '../abilities'
 import { spaceBackground } from '../background'
-import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
+import {
+  ENERMY_BASE_COUNT,
+  ENERMY_INCREMENT_RATIO,
+  GEN_ENEMY_INTERVAL,
+  ENEMIES_PER_SPAWN,
+  DEFAULT_LEVEL,
+  DEFAULT_SCORE,
+  SCORE_PER_LEVEL
+} from '../config'
 import { enemyGenerator } from '../enemy-generator'
 import { BloodEffect, ExplosionEffect, ParticleBase } from '../sprites/effects'
 import { Enemy, Sprite22, Sprite33, GhostEnemy } from '../sprites/enemy'
@@ -14,27 +22,19 @@ import { SmallTV } from '../sprites/player'
 import { PowerBulletItem } from '../sprites/special-items/defines/power-bullet.ts'
 import { ShotgunItem } from '../sprites/special-items/defines/shotgun.ts'
 import { LaserItem } from '../sprites/special-items/defines/laser.ts'
+import { SRAWItem } from '../sprites/special-items/defines/sraw.ts'
 import { SpecialItemType } from '../sprites/special-items/types.ts'
+import { MAX_SPECIAL_ITEMS, ITEM_DROP_CHANCE, WEAPON_DURATION } from '../sprites/special-items/config.ts'
 import { getRandomItem, ISpecialItem } from '../sprites/special-items/utils.ts'
 import { WeaponBase } from '../sprites/weapon/defines/_base.ts'
 import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
 import { Laser } from '../sprites/weapon/defines/laser.ts'
+import { SRAWMissile, SRAW_FIRE_INTERVAL, SRAW_MISSILE_COUNT } from '../sprites/weapon/defines/sraw.ts'
 import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
+import { GEN_WEAPON_INTERVAL } from '../sprites/weapon/config.ts'
 import { floor, rand, checkSpriteCollision, checkPointCollision } from '../utils'
-
-// Time constants (in seconds)
-const MAX_SPECIAL_ITEMS = 5
-const GEN_ENEMY_INTERVAL = 0.5 // seconds - 更快生成
-const ENEMIES_PER_SPAWN = 3 // 每次生成敌人数量
-const GEN_WEAPON_INTERVAL = 0.083 // ~5 frames at 60fps = 5/60 seconds
-const ITEM_DROP_CHANCE = 0.3 // 30% chance to drop item
-const WEAPON_DURATION = 10 // seconds
-
-const DEFAULT_LEVEL = 1
-const DEFAULT_SCORE = 0
-const SCORE_PER_LEVEL = 100 // 每100分升一级
 
 let score = DEFAULT_SCORE
 let level = DEFAULT_LEVEL
@@ -780,6 +780,11 @@ class SpecialItems {
       case SpecialItemType.LASER:
         player.switchWeapon(WeaponType.LASER, WEAPON_DURATION, true)
         break
+      case SpecialItemType.SRAW:
+        player.switchWeapon(WeaponType.SRAW, WEAPON_DURATION, true)
+        // 立即发射一次
+        Weapons.srawFireTimer = 0
+        break
       case SpecialItemType.HEAL: {
         // 恢复 30% 最大生命值
         const healAmount = Math.ceil(player.maxHp * 0.3)
@@ -1042,6 +1047,7 @@ class Player {
  */
 class Weapons {
   static generateWeaponTimer = GEN_WEAPON_INTERVAL
+  static srawFireTimer = 0 // SRAW 发射计时器
 
   static get allWeapons () {
     return [
@@ -1049,18 +1055,81 @@ class Weapons {
     ]
   }
 
+  /**
+   * 获取最近的敌人列表
+   */
+  static getNearestEnemies (x: number, y: number, count: number): Enemy[] {
+    // 收集所有敌人
+    const allEnemies: Enemy[] = [
+      ...Enemies.enemies,
+      ...enemyGenerator.waveEnemies
+    ].filter(e => e && !e.isDead)
+
+    // 按距离排序
+    allEnemies.sort((a, b) => {
+      const distA = Math.hypot(a.x - x, a.y - y)
+      const distB = Math.hypot(b.x - x, b.y - y)
+      return distA - distB
+    })
+
+    // 返回最近的 count 个
+    return allEnemies.slice(0, count)
+  }
+
+  /**
+   * 创建 SRAW 导弹
+   */
+  static createSRAWMissiles (player: SmallTV) {
+    const nearestEnemies = Weapons.getNearestEnemies(player.x, player.y, SRAW_MISSILE_COUNT)
+
+    for (let i = 0; i < SRAW_MISSILE_COUNT; i++) {
+      const missile = new SRAWMissile({
+        x: player.x,
+        y: player.y,
+        direction: player.weaponDirection
+      })
+
+      // 给每个导弹分配一个目标
+      if (nearestEnemies[i]) {
+        missile.setTarget(nearestEnemies[i])
+      } else if (nearestEnemies.length > 0) {
+        // 如果敌人不够，循环分配
+        missile.setTarget(nearestEnemies[i % nearestEnemies.length])
+      }
+
+      // 给导弹一个初始发射角度分散效果
+      const spreadAngle = ((i - (SRAW_MISSILE_COUNT - 1) / 2) * 0.3) // 每个导弹偏移一定角度
+      missile.setAngle((missile.angle || 0) + spreadAngle)
+
+      player.weapons.push(missile)
+    }
+  }
+
   static createWeapon (deltaTime: number) {
+    // 更新通用武器生成计时器
     if (Weapons.generateWeaponTimer > 0) {
       Weapons.generateWeaponTimer -= deltaTime
-      return
     }
 
     for (let i = 0, length = Player.allPlayers.length; i < length; i++) {
       const player = Player.allPlayers[i]
-      if (!player || !player.attacking) { continue }
+      if (!player) { continue }
 
-      // Tick weapon duration
-      player.tickWeaponDuration(deltaTime)
+      // SRAW 自动发射（不需要按攻击键，使用独立计时器）
+      if (player.currentWeaponType === WeaponType.SRAW) {
+        Weapons.srawFireTimer -= deltaTime
+        if (Weapons.srawFireTimer <= 0) {
+          Weapons.createSRAWMissiles(player)
+          Weapons.srawFireTimer = SRAW_FIRE_INTERVAL
+        }
+        continue // SRAW 不需要其他武器逻辑
+      }
+
+      // 其他武器需要等待通用计时器
+      if (Weapons.generateWeaponTimer > 0) { continue }
+
+      // 其他武器需要玩家按攻击键
+      if (!player.attacking) { continue }
 
       // Handle different weapon types
       if (player.currentWeaponType === WeaponType.SHOTGUN) {
@@ -1103,7 +1172,10 @@ class Weapons {
       }
     }
 
-    Weapons.generateWeaponTimer = GEN_WEAPON_INTERVAL
+    // 只有在计时器归零时才重置（表示本帧创建了武器）
+    if (Weapons.generateWeaponTimer <= 0) {
+      Weapons.generateWeaponTimer = GEN_WEAPON_INTERVAL
+    }
   }
 
   static tickWeapon (stage: Stage, deltaTime: number) {
@@ -1128,8 +1200,12 @@ class Weapons {
         const speed = weapon.speed * deltaTime
         const direction = weapon.direction
 
-        // 如果武器使用角度移动（无极方向射击）
-        if (weapon.useAngleMovement) {
+        // SRAW 导弹使用追踪逻辑
+        if (weapon instanceof SRAWMissile) {
+          weapon.updateTracking(deltaTime)
+          weapon.moveByAngle(speed)
+        } else if (weapon.useAngleMovement) {
+          // 如果武器使用角度移动（无极方向射击）
           weapon.moveByAngle(speed)
         } else if (weapon instanceof ShotgunPellet) {
           // 散弹使用角度移动
@@ -1143,7 +1219,7 @@ class Weapons {
         }
 
         // Check range limit for special weapons
-        const weaponWithRange = weapon as (PowerBullet | ShotgunPellet | Laser)
+        const weaponWithRange = weapon as (PowerBullet | ShotgunPellet | Laser | SRAWMissile)
         if (weaponWithRange.isOutOfRange && weaponWithRange.isOutOfRange()) {
           weapons.splice(j, 1)
           continue
@@ -1218,6 +1294,7 @@ class Weapons {
 
   static $reset () {
     Weapons.generateWeaponTimer = GEN_WEAPON_INTERVAL
+    Weapons.srawFireTimer = 0
   }
 }
 
@@ -1257,6 +1334,7 @@ class UI {
   static powerBulletItemIcon: PowerBulletItem = null
   static shotgunItemIcon: ShotgunItem = null
   static laserItemIcon: LaserItem = null
+  static srawItemIcon: SRAWItem = null
 
   static getItemSprite (type: WeaponType) {
     if (type === WeaponType.POWER_BULLET) {
@@ -1277,6 +1355,12 @@ class UI {
         UI.laserItemIcon.updateTexture()
       }
       return UI.laserItemIcon
+    } else if (type === WeaponType.SRAW) {
+      if (!UI.srawItemIcon) {
+        UI.srawItemIcon = new SRAWItem()
+        UI.srawItemIcon.updateTexture()
+      }
+      return UI.srawItemIcon
     } else {
       // 普通子弹用子弹图标
       if (!UI.bulletIcon) {

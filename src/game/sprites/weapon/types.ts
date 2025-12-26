@@ -4,7 +4,8 @@ enum WeaponType {
   BULLET = 'BULLET',
   POWER_BULLET = 'POWER_BULLET',
   SHOTGUN = 'SHOTGUN',
-  LASER = 'LASER'
+  LASER = 'LASER',
+  SRAW = 'SRAW' // 自动追踪导弹
 }
 
 interface IWeapon {

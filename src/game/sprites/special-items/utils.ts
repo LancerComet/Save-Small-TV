@@ -7,6 +7,7 @@ import { HealItem } from './defines/heal'
 import { ShieldItem } from './defines/shield'
 import { SpeedUpItem } from './defines/speed-up'
 import { LaserItem } from './defines/laser'
+import { SRAWItem } from './defines/sraw'
 
 /**
  * 道具接口
@@ -27,9 +28,10 @@ interface ItemDropConfig {
 }
 
 const ITEM_DROP_TABLE: ItemDropConfig[] = [
-  { ItemClass: PowerBulletItem, weight: 25 }, // 25%
-  { ItemClass: ShotgunItem, weight: 25 }, // 25%
+  { ItemClass: PowerBulletItem, weight: 20 }, // 20%
+  { ItemClass: ShotgunItem, weight: 20 }, // 20%
   { ItemClass: LaserItem, weight: 15 }, // 15% - 激光
+  { ItemClass: SRAWItem, weight: 10 }, // 10% - SRAW 追踪导弹（稀有）
   { ItemClass: HealItem, weight: 15 }, // 15% - 恢复
   { ItemClass: ShieldItem, weight: 10 }, // 10% - 护盾（稀有）
   { ItemClass: SpeedUpItem, weight: 10 } // 10% - 加速（稀有）

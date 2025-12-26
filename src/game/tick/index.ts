@@ -623,6 +623,11 @@ class SpecialItems {
       case SpecialItemType.SHOTGUN:
         player.switchWeapon(WeaponType.SHOTGUN, WEAPON_DURATION, true)
         break
+      case SpecialItemType.HEAL:
+        // 恢复 30% 最大生命值
+        const healAmount = Math.ceil(player.maxHp * 0.3)
+        player.hp = Math.min(player.hp + healAmount, player.maxHp)
+        break
       default:
         break
     }
@@ -757,6 +762,7 @@ class Player {
       } else {
         player.weaponDirection = rightStickY > 0 ? 'B' : 'T'
       }
+      player.updateLookDirection()
     } else if (input.shootLeft || input.shootRight || input.shootUp || input.shootDown) {
       // 键盘四方向射击
       player.useAnalogShooting = false
@@ -771,6 +777,7 @@ class Player {
       } else if (input.shootDown) {
         player.weaponDirection = 'B'
       }
+      player.updateLookDirection()
       player.attacking = true
     } else {
       player.attacking = false

@@ -21,7 +21,7 @@ type SpriteTextures = Array<ImageData>
 /**
  * Define type for direction.
  */
-type SpriteDirection = 'L' | 'R' | 'T' | 'B'
+type SpriteDirection = 'L' | 'R' | 'T' | 'B' | null
 
 export type {
   SpriteBitmap,

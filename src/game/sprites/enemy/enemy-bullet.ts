@@ -131,13 +131,18 @@ class HomingBullet implements IProjectile {
     ctx.closePath()
     ctx.fill()
 
-    // 尾焰
-    ctx.fillStyle = '#ff66ff'
-    const tailX = this.x - this.vx * 3
-    const tailY = this.y - this.vy * 3
-    ctx.beginPath()
-    ctx.arc(tailX, tailY, this.size * 0.5, 0, Math.PI * 2)
-    ctx.fill()
+    // 尾焰（使用速度的单位向量）
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy)
+    if (speed > 0) {
+      const dirX = this.vx / speed
+      const dirY = this.vy / speed
+      ctx.fillStyle = '#ff66ff'
+      const tailX = this.x - dirX * this.size * 2
+      const tailY = this.y - dirY * this.size * 2
+      ctx.beginPath()
+      ctx.arc(tailX, tailY, this.size * 0.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
 
   isOutOfBounds (width: number, height: number): boolean {

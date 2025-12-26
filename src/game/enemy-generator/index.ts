@@ -1,76 +1,38 @@
-/**
- * Wave Manager - 波次管理器
- * 管理所有敌人波次策略的触发和执行
- */
-
 import { Stage } from '../../core/stage'
 import { Enemy, Sprite22 } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
-import { IWaveStrategy } from './base'
 import { HorizontalRushStrategy } from './defines/horizontal-rush'
+import { UncleWaveStrategy } from './defines/uncle-wave.ts'
 import { VerticalRushStrategy } from './defines/vertical-rush'
-import { BossWaveStrategy } from './defines/boss-wave'
+import { IEnemyGenStrategy } from './type.ts'
 
-interface StrategyState {
-  strategy: IWaveStrategy
+interface IStrategyState {
+  strategy: IEnemyGenStrategy
   countdown: number
 }
 
 /**
- * 波次管理器
+ * 波次管理器.
+ * 管理所有敌人波次策略的触发和执行.
  */
-class WaveManager {
-  /** 所有策略及其状态 */
-  private strategies: StrategyState[] = []
-
-  /** 波次敌人列表 */
-  waveEnemies: Enemy[] = []
-
-  constructor () {
-    this.initStrategies()
-  }
+class EnemyGenerator {
+  /**
+   * 所有策略及其状态.
+   */
+  private strategies: IStrategyState[] = []
 
   /**
-   * 初始化默认策略
+   * 波次敌人列表.
    */
-  private initStrategies () {
-    this.addStrategy(new HorizontalRushStrategy({
-      interval: 15,
-      enemyCount: 3,
-      spacing: 15,
-      speed: 60,
-      fromLeft: true,
-      EnemyType: Sprite22
-    }))
-
-    this.addStrategy(new HorizontalRushStrategy({
-      interval: 30,
-      enemyCount: 5,
-      spacing: 25,
-      speed: 90
-    }))
-
-    this.addStrategy(new VerticalRushStrategy({
-      interval: 60,
-      enemyCount: 3,
-      spacing: 20,
-      speed: 90
-    }))
-
-    // Boss 波次 - 每60秒
-    this.addStrategy(new BossWaveStrategy({
-      interval: 60,
-      speed: 30
-    }))
-  }
+  waveEnemies: Enemy[] = []
 
   /**
    * 添加策略
    */
-  addStrategy (strategy: IWaveStrategy) {
+  addStrategy (strategy: IEnemyGenStrategy) {
     this.strategies.push({
       strategy,
-      countdown: strategy.interval
+      countdown: strategy.config.interval
     })
   }
 
@@ -95,7 +57,9 @@ class WaveManager {
    * 更新所有策略计时器
    */
   update (stage: Stage, player: SmallTV, deltaTime: number) {
-    if (!player || player.isDead) return
+    if (!player || player.isDead) {
+      return
+    }
 
     for (const state of this.strategies) {
       if (!state.strategy.enabled) continue
@@ -108,7 +72,7 @@ class WaveManager {
         this.waveEnemies.push(...enemies)
 
         // 重置计时器
-        state.countdown = state.strategy.interval
+        state.countdown = state.strategy.config.interval
       }
     }
   }
@@ -135,7 +99,7 @@ class WaveManager {
 
       // 检查是否超出屏幕范围（精英敌人不会因出界被删除）
       if (!enemy.isElite && (
-          enemy.x < bounds.left - buffer ||
+        enemy.x < bounds.left - buffer ||
           enemy.x > bounds.right + buffer ||
           enemy.y < bounds.top - buffer ||
           enemy.y > bounds.bottom + buffer)) {
@@ -181,24 +145,50 @@ class WaveManager {
     }
   }
 
-  /**
-   * 重置
-   */
   reset () {
     this.waveEnemies = []
     for (const state of this.strategies) {
-      state.countdown = state.strategy.interval
+      state.countdown = state.strategy.config.interval
     }
+  }
+
+  constructor () {
+    this.addStrategy(new HorizontalRushStrategy({
+      interval: 15,
+      enemyCount: 3,
+      spacing: 15,
+      speed: 60,
+      fromLeft: true,
+      enemyType: Sprite22
+    }))
+
+    this.addStrategy(new HorizontalRushStrategy({
+      interval: 30,
+      enemyCount: 5,
+      spacing: 25,
+      speed: 90
+    }))
+
+    this.addStrategy(new VerticalRushStrategy({
+      interval: 60,
+      enemyCount: 3,
+      spacing: 20,
+      speed: 90
+    }))
+
+    this.addStrategy(new UncleWaveStrategy({
+      interval: 60,
+      speed: 30
+    }))
   }
 }
 
-// 单例
-const waveManager = new WaveManager()
+const enemyGenerator = new EnemyGenerator()
 
 export {
-  WaveManager,
-  waveManager,
+  EnemyGenerator,
+  enemyGenerator,
   HorizontalRushStrategy,
   VerticalRushStrategy,
-  BossWaveStrategy
+  UncleWaveStrategy
 }

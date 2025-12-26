@@ -7,50 +7,42 @@ import { Stage } from '../../../core/stage'
 import { FixedBehavior } from '../../behaviors'
 import { Enemy, FireballEnemy } from '../../sprites/enemy'
 import { SmallTV } from '../../sprites/player'
-import { WaveStrategy, IWaveConfig, EnemyConstructor } from '../base'
+import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 
-interface IHorizontalRushConfig extends IWaveConfig {
-  fromLeft: boolean
-  EnemyType?: EnemyConstructor
+interface IHorizontalRushConfig extends IEnemyGenConfig {
 }
 
 /**
  * 水平横冲策略
  */
-class HorizontalRushStrategy extends WaveStrategy {
-  name = 'HorizontalRush'
+class HorizontalRushStrategy implements IEnemyGenStrategy {
+  private fromLeft: boolean = true
 
-  protected config: IHorizontalRushConfig = {
+  readonly name = 'HorizontalRush'
+  readonly config: IHorizontalRushConfig = {
     enemyCount: 3,
     spacing: 25,
     speed: 90,
     interval: 30,
-    fromLeft: true,
-    EnemyType: FireballEnemy
+    enemyType: FireballEnemy
   }
 
-  constructor (config?: Partial<IHorizontalRushConfig>) {
-    super()
-    if (config) {
-      this.config = { ...this.config, ...config }
-      this.interval = this.config.interval
-    }
-  }
+  enabled: boolean = true
 
   execute (stage: Stage, player: SmallTV): Enemy[] {
     const enemies: Enemy[] = []
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
 
-    const { enemyCount, spacing, speed, fromLeft, EnemyType } = this.config
-    const EnemyClass = EnemyType || FireballEnemy
+    const { enemyCount, spacing, speed, enemyType } = this.config
+    const EnemyClass = enemyType || FireballEnemy
 
     // 计算起始位置
-    const startX = fromLeft
+    const startX = this.fromLeft
       ? bounds.left - 50 // 屏幕左侧外
       : bounds.right + 50 // 屏幕右侧外
 
-    // 敌人Y轴居中对齐玩家
+    // 敌人 Y 轴居中对齐玩家
     const centerY = player.y + player.height / 2
     const totalHeight = (enemyCount - 1) * spacing
     const startY = centerY - totalHeight / 2
@@ -65,15 +57,37 @@ class HorizontalRushStrategy extends WaveStrategy {
       enemy.scoreValue = 20
 
       // 设置水平固定移动行为
-      enemy.setBehavior(FixedBehavior.horizontal(fromLeft ? 1 : -1, speed))
+      enemy.setBehavior(FixedBehavior.horizontal(this.fromLeft ? 1 : -1, speed))
 
       enemies.push(enemy)
     }
 
     // 下次从另一侧出现
-    this.config.fromLeft = !this.config.fromLeft
+    this.fromLeft = !this.fromLeft
 
     return enemies
+  }
+
+  constructor (config: Partial<{
+    interval: number
+    enemyCount: number
+    spacing: number
+    speed: number
+    fromLeft: boolean
+    enemyType: new () => Enemy
+  }>) {
+    this.config.interval = config.interval
+    this.config.enemyCount = config.enemyCount
+    this.config.spacing = config.spacing
+    this.config.speed = config.speed
+
+    if (config.enemyType) {
+      this.config.enemyType = config.enemyType
+    }
+
+    if (typeof config.fromLeft === 'boolean') {
+      this.fromLeft = config.fromLeft
+    }
   }
 }
 

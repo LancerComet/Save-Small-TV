@@ -7,6 +7,7 @@ import { Stage } from '../../core/stage'
 import { IProjectile } from '../abilities'
 import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
+import { enemyGenerator } from '../enemy-generator'
 import { BloodEffect, ExplosionEffect, ParticleBase } from '../sprites/effects'
 import { Enemy, getRandomEnemy } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
@@ -21,7 +22,6 @@ import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
 import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
 import { floor, rand, checkSpriteCollision, checkPointCollision } from '../utils'
-import { waveManager } from '../waves'
 
 // Time constants (in seconds)
 const MAX_SPECIAL_ITEMS = 5
@@ -406,7 +406,7 @@ class EnemyProjectiles {
     }
 
     // 收集波次敌人的投射物（包括 Boss）
-    for (const enemy of waveManager.waveEnemies) {
+    for (const enemy of enemyGenerator.waveEnemies) {
       const newProjectiles = enemy.collectProjectiles()
       EnemyProjectiles.projectiles.push(...newProjectiles)
     }
@@ -426,6 +426,9 @@ class EnemyProjectiles {
       const proj = EnemyProjectiles.projectiles[i]
       proj.update(deltaTime)
 
+      // 检查生命周期是否结束（追踪弹等有 lifetime）
+      const lifetimeExpired = 'lifetime' in proj && (proj as any).lifetime <= 0
+
       // 使用世界边界判断出界，而不是屏幕尺寸
       const outOfBounds = (
         proj.x < bounds.left - buffer ||
@@ -434,7 +437,7 @@ class EnemyProjectiles {
         proj.y > bounds.bottom + buffer
       )
 
-      if (outOfBounds) {
+      if (outOfBounds || lifetimeExpired) {
         EnemyProjectiles.projectiles.splice(i, 1)
       }
     }
@@ -517,8 +520,8 @@ class Waves {
    * 检测武器与波次敌人的碰撞
    */
   static checkWeaponHit (weapon: WeaponBase): boolean {
-    for (let i = waveManager.waveEnemies.length - 1; i >= 0; i--) {
-      const enemy = waveManager.waveEnemies[i]
+    for (let i = enemyGenerator.waveEnemies.length - 1; i >= 0; i--) {
+      const enemy = enemyGenerator.waveEnemies[i]
       if (!enemy || enemy.isDead) continue
 
       // 使用统一碰撞检测工具
@@ -549,7 +552,7 @@ class Waves {
             SpecialItems.dropItem(enemy.x + d * 10, enemy.y + d * 10)
           }
 
-          waveManager.waveEnemies.splice(i, 1)
+          enemyGenerator.waveEnemies.splice(i, 1)
         }
 
         return true // 武器命中
@@ -563,19 +566,19 @@ class Waves {
     if (!player) return
 
     // 更新波次计时器
-    waveManager.update(stage, player, deltaTime)
+    enemyGenerator.update(stage, player, deltaTime)
 
     // 更新和绘制冲锋敌人（传入 player 以支持 Boss 追踪和能力更新）
-    waveManager.tickEnemies(stage, player, deltaTime)
+    enemyGenerator.tickEnemies(stage, player, deltaTime)
 
     // 检测与玩家碰撞
-    for (const enemy of waveManager.waveEnemies) {
+    for (const enemy of enemyGenerator.waveEnemies) {
       Waves.detectPlayer(enemy)
     }
   }
 
   static $reset () {
-    waveManager.reset()
+    enemyGenerator.reset()
   }
 }
 

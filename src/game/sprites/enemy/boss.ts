@@ -157,7 +157,7 @@ class UncleEnemy extends Enemy {
     // 1. 普通射击 - 快速单发（公文攻击）
     this.addAbility(new ShootAbility({
       cooldown: 1.5,
-      bulletSpeed: 160,
+      bulletSpeed: 100,
       bulletDamage: 15,
       bulletSize: 5,
       bulletColor: '#1a1a2e' // 深色西装色
@@ -169,7 +169,7 @@ class UncleEnemy extends Enemy {
       bulletCount: 12,
       bulletSpeed: 120,
       bulletDamage: 10,
-      spreadAngle: 0, // 360度
+      spreadAngle: 0, // 360 度
       aimAtTarget: false,
       bulletColor: '#cc0000' // 红色领带色
     }))

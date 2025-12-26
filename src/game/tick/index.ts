@@ -118,10 +118,8 @@ class Init {
    * @memberof Init
    */
   static $tick (stage: Stage) {
-    // Init size.
-    if (!stageWidth || !stageHeight) {
-      Init.size(stage)
-    }
+    // Always update size (for window resize support).
+    Init.size(stage)
 
     // Init player.
     !Player.instance && Init.initPlayer()
@@ -1171,7 +1169,7 @@ class UI {
     const fontSize = 8
     const lineHeight = 12
     const lines = [
-      'GAME OVER',
+      'Gmae over young man!!',
       `Your score: ${score}`,
       'Press ENTER to restart'
     ]
@@ -1230,6 +1228,8 @@ class Game {
   }
 
   static $gameInWaiting (stage: Stage) {
+    Init.$tick(stage) // 更新尺寸
+    spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y) // 绘制背景
     UI.$printGameOver(stage)
     Game.waitRestart(stage)
   }

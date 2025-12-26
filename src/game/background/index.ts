@@ -37,23 +37,28 @@ class SpaceBackground {
 
   /**
    * Initialize the background with stars.
+   * Only generates stars on first call, subsequent calls just update viewport.
    */
   init (width: number, height: number) {
-    if (this.initialized && this.viewportWidth === width && this.viewportHeight === height) {
+    this.viewportWidth = width
+    this.viewportHeight = height
+
+    // Only generate stars once
+    if (this.initialized) {
       return
     }
 
-    this.viewportWidth = width
-    this.viewportHeight = height
     this.stars = []
 
-    // Generate stars for each layer
+    // Generate stars for each layer (use large fixed area)
+    const maxWidth = 1920
+    const maxHeight = 1080
     for (let layer = 0; layer < 3; layer++) {
-      const count = STARS_PER_LAYER[layer]
+      const count = STARS_PER_LAYER[layer] * 4  // More stars for larger area
       for (let i = 0; i < count; i++) {
         this.stars.push({
-          x: Math.random() * (width + this.BUFFER * 2) - this.BUFFER,
-          y: Math.random() * (height + this.BUFFER * 2) - this.BUFFER,
+          x: Math.random() * (maxWidth + this.BUFFER * 2) - this.BUFFER,
+          y: Math.random() * (maxHeight + this.BUFFER * 2) - this.BUFFER,
           size: layer === 2 ? 2 : 1,  // Near stars are bigger
           brightness: Math.floor(Math.random() * STAR_COLORS.length),
           layer

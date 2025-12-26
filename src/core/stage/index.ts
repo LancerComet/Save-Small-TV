@@ -25,7 +25,7 @@ class Stage {
 
   private set scale (newValue) {
     this._scale = newValue
-    this.$context.scale(newValue, newValue)
+    this.$context.setTransform(newValue, 0, 0, newValue, 0, 0)
   }
 
   /**
@@ -59,6 +59,39 @@ class Stage {
       'imageSmoothingEnabled'
     ].forEach(item => {
       this.$context[item] = false
+    })
+  }
+
+  // Resize handling.
+  // ==================================
+  /**
+   * Resize canvas to fill entire window.
+   *
+   * @private
+   * @memberof Stage
+   */
+  private resize () {
+    // Set canvas to fill window
+    this.$canvasElement.width = window.innerWidth
+    this.$canvasElement.height = window.innerHeight
+
+    // Re-apply transform with current scale
+    this.$context.setTransform(this._scale, 0, 0, this._scale, 0, 0)
+
+    // Re-apply settings after resize
+    this.disableSmoothing()
+    this.$context.font = '8px kenpixel'
+  }
+
+  /**
+   * Register window resize event.
+   *
+   * @private
+   * @memberof Stage
+   */
+  private registerResizeEvent () {
+    window.addEventListener('resize', () => {
+      this.resize()
     })
   }
 
@@ -389,22 +422,27 @@ class Stage {
     this.$canvasElement = canvasElement
     this.$context = canvasElement.getContext('2d')
 
+    // Set scale if provided.
+    if (typeof option === 'object' && typeof option.scale === 'number') {
+      this._scale = option.scale
+    }
+
+    // Initial resize to fit window.
+    this.resize()
+
     // Set font style.
     this.$context.font = '8px kenpixel'
 
     // Set options.
     if (typeof option === 'object') {
-      // Set smoothing.
       !option.enableSmooth && this.disableSmoothing()
-
-      // Set scale.
-      if (typeof option.scale === 'number') {
-        this.scale = option.scale
-      }
     }
 
     // Register Key Events.
     this.registerKeyboardEvents()
+
+    // Register Resize Events.
+    this.registerResizeEvent()
   }
 }
 

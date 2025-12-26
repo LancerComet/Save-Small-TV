@@ -23,7 +23,7 @@ class VerticalRushStrategy extends WaveStrategy {
   protected config: IVerticalRushConfig = {
     enemyCount: 5,
     spacing: 20,
-    speed: 1.5,
+    speed: 90,
     interval: 60,
     fromTop: true,
     EnemyType: FireballEnemy
@@ -60,6 +60,9 @@ class VerticalRushStrategy extends WaveStrategy {
       const enemy = new EnemyClass()
       enemy.x = startX + i * spacing
       enemy.y = startY
+
+      // 波次敌人击杀分数更高
+      enemy.scoreValue = 20
 
       // 设置垂直固定移动行为
       enemy.setBehavior(FixedBehavior.vertical(fromTop ? 1 : -1, speed))

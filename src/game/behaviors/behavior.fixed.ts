@@ -4,7 +4,7 @@
  */
 
 import { Sprite } from '../../core/sprite'
-import { BaseBehavior, IBehavior, BehaviorTarget, BASE_FPS } from './base'
+import { BaseBehavior, IBehavior, BehaviorTarget } from './base'
 
 interface IFixedConfig {
   /** X 方向速度 */
@@ -29,8 +29,8 @@ class FixedBehavior extends BaseBehavior {
   }
 
   update (sprite: Sprite, _target: BehaviorTarget, deltaTime: number): void {
-    sprite.x += this.velocityX * BASE_FPS * deltaTime
-    sprite.y += this.velocityY * BASE_FPS * deltaTime
+    sprite.x += this.velocityX * deltaTime
+    sprite.y += this.velocityY * deltaTime
   }
 
   clone (): IBehavior {

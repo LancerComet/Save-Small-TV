@@ -4,7 +4,7 @@
  * 将移动逻辑从 Enemy 解耦，实现外观与行为的自由组合
  */
 
-export { BaseBehavior, BASE_FPS } from './base'
+export { BaseBehavior } from './base'
 export type { IBehavior, BehaviorTarget } from './base'
 
 export { ChaseBehavior } from './behavior.chase'

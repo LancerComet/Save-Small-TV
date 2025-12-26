@@ -23,7 +23,7 @@ class HorizontalRushStrategy extends WaveStrategy {
   protected config: IHorizontalRushConfig = {
     enemyCount: 3,
     spacing: 25,
-    speed: 1.5,
+    speed: 90,
     interval: 30,
     fromLeft: true,
     EnemyType: FireballEnemy
@@ -60,6 +60,9 @@ class HorizontalRushStrategy extends WaveStrategy {
       const enemy = new EnemyClass()
       enemy.x = startX
       enemy.y = startY + i * spacing
+
+      // 波次敌人击杀分数更高
+      enemy.scoreValue = 20
 
       // 设置水平固定移动行为
       enemy.setBehavior(FixedBehavior.horizontal(fromLeft ? 1 : -1, speed))

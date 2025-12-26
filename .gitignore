@@ -20,3 +20,5 @@ npm-debug.log*
 
 # Lock files (optional)
 package-lock.json
+
+.local/

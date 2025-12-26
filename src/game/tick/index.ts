@@ -7,7 +7,7 @@ import { Stage } from '../../core/stage'
 
 import { spaceBackground } from '../background'
 import { ENERMY_BASE_COUNT, ENERMY_INCREMENT_RATIO } from '../config'
-import { BloodEffect, BloodParticle, ExplosionEffect, ExplosionParticle } from '../sprites/effects'
+import { BloodEffect, BloodParticle, ExplosionEffect, ExplosionParticle, ParticleBase } from '../sprites/effects'
 import { Enemy, getRandomEnemy } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { SpecialItemBase } from '../sprites/special-items/defines/_base.ts'
@@ -20,7 +20,8 @@ import { Bullet } from '../sprites/weapon/defines/bullet.ts'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet.ts'
 import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun.ts'
 import { IWeapon, WeaponType } from '../sprites/weapon/types.ts'
-import { floor, rand } from '../utils'
+import { IProjectile } from '../abilities'
+import { floor, rand, checkSpriteCollision, checkPointCollision } from '../utils'
 import { waveManager } from '../waves'
 
 // Time constants (in seconds)
@@ -30,9 +31,6 @@ const ENEMIES_PER_SPAWN = 3 // 每次生成敌人数量
 const GEN_WEAPON_INTERVAL = 0.083 // ~5 frames at 60fps = 5/60 seconds
 const ITEM_DROP_CHANCE = 0.3 // 30% chance to drop item
 const WEAPON_DURATION = 10 // seconds
-
-// Speed multiplier for 60fps baseline
-const BASE_FPS = 60
 
 const DEFAULT_LEVEL = 1
 const DEFAULT_SCORE = 0
@@ -64,7 +62,8 @@ function tick (stage: Stage, deltaTime: number) {
   spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
 
   Enemys.$tick(stage, deltaTime)
-  Waves.$tick(stage, deltaTime) // 波次系统
+  Waves.$tick(stage, deltaTime) // 波次系统（包含 Boss）
+  EnemyProjectiles.$tick(stage, deltaTime) // 敌人投射物
   Effects.$tick(stage, deltaTime)
   SpecialItems.$tick(stage, deltaTime)
   Player.$tick(stage, deltaTime)
@@ -223,28 +222,13 @@ class Enemys {
     // 死亡的敌人不会伤害玩家
     if (enemy.isDead) { return }
 
-    // 敌人的碰撞区域（使用padding缩小）
-    const eLeft = enemy.x + enemy.paddingX
-    const eTop = enemy.y + enemy.paddingY
-    const eRight = enemy.x + enemy.width - enemy.paddingX
-    const eBottom = enemy.y + enemy.height - enemy.paddingY
-
     const allPlayers = Player.allPlayers
     for (let i = 0, length = allPlayers.length; i < length; i++) {
       const player = allPlayers[i]
-      // 玩家的碰撞区域（也使用padding缩小）
-      const pLeft = player.x + player.paddingX
-      const pTop = player.y + player.paddingY
-      const pRight = player.x + player.width - player.paddingX
-      const pBottom = player.y + player.height - player.paddingY
+      if (!player) { continue }
 
-      // AABB碰撞检测：两个矩形相交
-      if (
-        eLeft < pRight &&
-        eRight > pLeft &&
-        eTop < pBottom &&
-        eBottom > pTop
-      ) {
+      // 使用统一碰撞检测工具
+      if (checkSpriteCollision(enemy, player)) {
         player.takeDamage(enemy.attack)
       }
     }
@@ -259,7 +243,14 @@ class Enemys {
    * @memberof Enemy
    */
   static autoMove (enemy: Enemy, deltaTime: number) {
+    const player = Player.instance
+
     if (enemy.isDead) {
+      // 触发死亡能力（如爆炸）
+      if (!enemy.hasTriggeredDeathAbilities) {
+        enemy.triggerDeathAbilities(player)
+      }
+
       // 生成爆炸效果（只在刚死亡时触发一次）
       if (!enemy.hasSpawnedBlood) {
         Effects.spawnExplosion(
@@ -295,8 +286,10 @@ class Enemys {
       return
     }
 
+    // 更新敌人能力
+    enemy.updateAbilities(player, deltaTime)
+
     // 敌人通过行为系统移动（追踪玩家）
-    const player = Player.instance
     if (!player) { return }
 
     enemy.move(player, deltaTime)
@@ -341,6 +334,45 @@ class Enemys {
   }
 
   /**
+   * 检测武器与敌人的碰撞（公共方法）
+   * 用于 Waves 和 Weapons 的碰撞检测
+   *
+   * @static
+   * @param {WeaponBase} weapon
+   * @param {Enemy} enemy
+   * @returns {boolean} 是否命中
+   * @memberof Enemys
+   */
+  static checkWeaponHitEnemy (weapon: WeaponBase, enemy: Enemy): boolean {
+    if (!enemy || enemy.isDead) return false
+
+    if (checkSpriteCollision(weapon, enemy)) {
+      enemy.hp -= weapon.attack
+
+      // 被打中时出血效果
+      Effects.spawnBlood(weapon.x, weapon.y, 6)
+
+      if (enemy.isDead) {
+        // 触发死亡能力
+        if (!enemy.hasTriggeredDeathAbilities) {
+          enemy.triggerDeathAbilities(Player.instance)
+        }
+
+        // 爆炸效果
+        Effects.spawnExplosion(
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2,
+          20
+        )
+      }
+
+      return true
+    }
+
+    return false
+  }
+
+  /**
    * Data resetting function.
    *
    * @static
@@ -349,6 +381,108 @@ class Enemys {
   static $reset () {
     Enemys.enemys = []
     Enemys.$genEnemyCountdown = GEN_ENEMY_INTERVAL
+    EnemyProjectiles.$reset()
+  }
+}
+
+/**
+ * Enemy Projectiles - 敌人投射物系统
+ * 管理敌人能力产生的子弹
+ */
+class EnemyProjectiles {
+  static projectiles: IProjectile[] = []
+
+  /**
+   * 收集所有敌人的投射物
+   */
+  static collectFromEnemies () {
+    // 收集普通敌人的投射物
+    for (const enemy of Enemys.enemys) {
+      const newProjectiles = enemy.collectProjectiles()
+      EnemyProjectiles.projectiles.push(...newProjectiles)
+    }
+
+    // 收集波次敌人的投射物（包括 Boss）
+    for (const enemy of waveManager.waveEnemies) {
+      const newProjectiles = enemy.collectProjectiles()
+      EnemyProjectiles.projectiles.push(...newProjectiles)
+    }
+  }
+
+  /**
+   * 更新所有投射物
+   * @param stage Stage 对象，用于获取世界边界
+   * @param deltaTime 时间增量
+   */
+  static update (stage: Stage, deltaTime: number) {
+    // 获取相机的世界边界，加上缓冲区
+    const bounds = stage.camera.getWorldBounds()
+    const buffer = 50
+
+    for (let i = EnemyProjectiles.projectiles.length - 1; i >= 0; i--) {
+      const proj = EnemyProjectiles.projectiles[i]
+      proj.update(deltaTime)
+
+      // 使用世界边界判断出界，而不是屏幕尺寸
+      const outOfBounds = (
+        proj.x < bounds.left - buffer ||
+        proj.x > bounds.right + buffer ||
+        proj.y < bounds.top - buffer ||
+        proj.y > bounds.bottom + buffer
+      )
+
+      if (outOfBounds) {
+        EnemyProjectiles.projectiles.splice(i, 1)
+      }
+    }
+  }
+
+  /**
+   * 检测投射物与玩家的碰撞
+   */
+  static detectPlayer () {
+    for (let i = EnemyProjectiles.projectiles.length - 1; i >= 0; i--) {
+      const proj = EnemyProjectiles.projectiles[i]
+
+      for (const player of Player.allPlayers) {
+        if (!player || player.isDead) continue
+
+        // 使用统一碰撞检测工具（点-矩形碰撞）
+        if (checkPointCollision(proj.x, proj.y, player)) {
+          player.takeDamage(proj.damage)
+          EnemyProjectiles.projectiles.splice(i, 1)
+          break
+        }
+      }
+    }
+  }
+
+  /**
+   * 绘制所有投射物
+   */
+  static draw (stage: Stage) {
+    const ctx = stage.context
+    for (const proj of EnemyProjectiles.projectiles) {
+      ctx.save()
+      const [screenX, screenY] = stage.camera.toScreen(proj.x, proj.y)
+      ctx.translate(screenX - proj.x, screenY - proj.y)
+      proj.draw(ctx)
+      ctx.restore()
+    }
+  }
+
+  /**
+   * Tick
+   */
+  static $tick (stage: Stage, deltaTime: number) {
+    EnemyProjectiles.collectFromEnemies()
+    EnemyProjectiles.update(stage, deltaTime)
+    EnemyProjectiles.detectPlayer()
+    EnemyProjectiles.draw(stage)
+  }
+
+  static $reset () {
+    EnemyProjectiles.projectiles = []
   }
 }
 
@@ -365,21 +499,12 @@ class Waves {
   static detectPlayer (enemy: Enemy) {
     if (enemy.isDead) return
 
-    const eLeft = enemy.x + enemy.paddingX
-    const eTop = enemy.y + enemy.paddingY
-    const eRight = enemy.x + enemy.width - enemy.paddingX
-    const eBottom = enemy.y + enemy.height - enemy.paddingY
-
     for (const player of Player.allPlayers) {
       if (!player || player.isDead) continue
 
-      const pLeft = player.x + 1
-      const pTop = player.y + 2
-      const pRight = player.x + player.width - 1
-      const pBottom = player.y + player.height - 2
-
-      if (eRight > pLeft && eLeft < pRight && eBottom > pTop && eTop < pBottom) {
-        gameOver = true
+      // 使用统一碰撞检测工具
+      if (checkSpriteCollision(enemy, player)) {
+        player.takeDamage(enemy.attack)
         return
       }
     }
@@ -389,35 +514,38 @@ class Waves {
    * 检测武器与波次敌人的碰撞
    */
   static checkWeaponHit (weapon: WeaponBase): boolean {
-    const weaponPdX = weapon.paddingX
-    const weaponPdY = weapon.paddingY
-
     for (let i = waveManager.waveEnemies.length - 1; i >= 0; i--) {
       const enemy = waveManager.waveEnemies[i]
       if (!enemy || enemy.isDead) continue
 
-      const startX = enemy.x + enemy.paddingX
-      const startY = enemy.y + enemy.paddingY
-      const endX = enemy.x + enemy.width - enemy.paddingX
-      const endY = enemy.y + enemy.height - enemy.paddingY
-
-      if (
-        (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
-        (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
-      ) {
+      // 使用统一碰撞检测工具
+      if (checkSpriteCollision(weapon, enemy)) {
         enemy.hp -= weapon.attack
 
         // 出血效果
         Effects.spawnBlood(weapon.x, weapon.y, 6)
 
         if (enemy.isDead) {
-          // 爆炸效果
+          // 触发死亡能力（如爆炸碎片）
+          if (!enemy.hasTriggeredDeathAbilities) {
+            enemy.triggerDeathAbilities(Player.instance)
+          }
+
+          // 爆炸效果（精英敌人更大）
           Effects.spawnExplosion(
             enemy.x + enemy.width / 2,
             enemy.y + enemy.height / 2,
-            12
+            enemy.isElite ? 50 : 12
           )
-          score += 20 // 波次敌人分数更高
+
+          // 使用敌人自身的属性决定分数和掉落
+          score += enemy.scoreValue
+
+          // 根据敌人的 dropCount 掉落道具
+          for (let d = 0; d < enemy.dropCount; d++) {
+            SpecialItems.dropItem(enemy.x + d * 10, enemy.y + d * 10)
+          }
+
           waveManager.waveEnemies.splice(i, 1)
         }
 
@@ -434,8 +562,8 @@ class Waves {
     // 更新波次计时器
     waveManager.update(stage, player, deltaTime)
 
-    // 更新和绘制冲锋敌人
-    waveManager.tickEnemies(stage, deltaTime)
+    // 更新和绘制冲锋敌人（传入 player 以支持 Boss 追踪和能力更新）
+    waveManager.tickEnemies(stage, player, deltaTime)
 
     // 检测与玩家碰撞
     for (const enemy of waveManager.waveEnemies) {
@@ -450,11 +578,13 @@ class Waves {
 
 /**
  * Visual Effects management.
+ * 统一粒子管理，支持任意类型粒子效果
  *
  * @class Effects
  */
 class Effects {
-  static bloodParticles: BloodParticle[] = []
+  // 使用统一的粒子数组管理所有粒子
+  static allParticles: ParticleBase[] = []
 
   /**
    * Spawn blood particles at position.
@@ -467,13 +597,8 @@ class Effects {
    */
   static spawnBlood (x: number, y: number, count: number = 8) {
     const particles = BloodEffect.create(x, y, count, 3)
-    Effects.bloodParticles.push(...particles)
+    Effects.allParticles.push(...particles)
   }
-
-  /**
-   * Explosion particles.
-   */
-  static explosionParticles: ExplosionParticle[] = []
 
   /**
    * Spawn explosion particles at position.
@@ -486,7 +611,7 @@ class Effects {
    */
   static spawnExplosion (x: number, y: number, count: number = 16) {
     const particles = ExplosionEffect.create(x, y, count, 3)
-    Effects.explosionParticles.push(...particles)
+    Effects.allParticles.push(...particles)
   }
 
   /**
@@ -500,31 +625,15 @@ class Effects {
   static $tick (stage: Stage, deltaTime: number) {
     const ctx = stage.context
 
-    // 处理血液粒子
-    for (let i = Effects.bloodParticles.length - 1; i >= 0; i--) {
-      const particle = Effects.bloodParticles[i]
+    // 统一处理所有粒子
+    for (let i = Effects.allParticles.length - 1; i >= 0; i--) {
+      const particle = Effects.allParticles[i]
       if (!particle) { continue }
 
       particle.update(deltaTime)
 
       if (particle.isDead) {
-        Effects.bloodParticles.splice(i, 1)
-        continue
-      }
-
-      const [screenX, screenY] = stage.camera.toScreen(particle.x, particle.y)
-      particle.draw(ctx, screenX, screenY)
-    }
-
-    // 处理爆炸粒子
-    for (let i = Effects.explosionParticles.length - 1; i >= 0; i--) {
-      const particle = Effects.explosionParticles[i]
-      if (!particle) { continue }
-
-      particle.update(deltaTime)
-
-      if (particle.isDead) {
-        Effects.explosionParticles.splice(i, 1)
+        Effects.allParticles.splice(i, 1)
         continue
       }
 
@@ -540,8 +649,7 @@ class Effects {
    * @memberof Effects
    */
   static $reset () {
-    Effects.bloodParticles = []
-    Effects.explosionParticles = []
+    Effects.allParticles = []
   }
 }
 
@@ -785,7 +893,7 @@ class Player {
 
   static move (deltaTime: number) {
     const player = Player.instance
-    const speed = player.speed * BASE_FPS * deltaTime
+    const speed = player.speed * deltaTime
 
     // 如果有手柄模拟量输入，使用模拟量进行平滑移动
     if (player.analogMoveX !== 0 || player.analogMoveY !== 0) {
@@ -926,11 +1034,8 @@ class Weapons {
         const weapon = weapons[j]
         if (!weapon) { continue }
 
-        const weaponPdX = weapon.paddingX
-        const weaponPdY = weapon.paddingY
-
-        // Move weapon - speed is now pixels per second
-        const speed = weapon.speed * BASE_FPS * deltaTime
+        // Move weapon - speed is pixels per second
+        const speed = weapon.speed * deltaTime
         const direction = weapon.direction
 
         // 如果武器使用角度移动（无极方向射击）
@@ -957,7 +1062,7 @@ class Weapons {
         // If weapon hits some enemy.
         let weaponDestroyed = false
 
-        // 先检测冲锋敌人
+        // 先检测波次敌人
         if (Waves.checkWeaponHit(weapon)) {
           weapons.splice(j, 1)
           weaponDestroyed = true
@@ -967,26 +1072,9 @@ class Weapons {
         if (!weaponDestroyed) {
           for (let k = 0, enemyLength = Enemys.enemys.length; k < enemyLength; k++) {
             const enemy = Enemys.enemys[k]
-            if (!enemy || enemy.isDead) { continue }
 
-            const startX = enemy.x + enemy.paddingX
-            const startY = enemy.y + enemy.paddingY
-            const endX = enemy.x + enemy.width - enemy.paddingX
-            const endY = enemy.y + enemy.height - enemy.paddingY
-
-            if (
-              (weapon.x + weaponPdX >= startX && weapon.x - weaponPdX <= endX) &&
-              (weapon.y + weaponPdY >= startY && weapon.y - weaponPdY <= endY)
-            ) {
-              enemy.hp -= weapon.attack
-
-              // 被打中时出血效果
-              Effects.spawnBlood(
-                weapon.x,
-                weapon.y,
-                6 // 较少的血液粒子
-              )
-
+            // 使用公共的武器碰撞检测方法
+            if (Enemys.checkWeaponHitEnemy(weapon, enemy)) {
               weapons.splice(j, 1)
               weaponDestroyed = true
               break

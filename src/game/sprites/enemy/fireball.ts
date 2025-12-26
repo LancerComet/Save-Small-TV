@@ -71,7 +71,7 @@ class FireballEnemy extends Enemy {
     this.x = 0
     this.y = 0
     this.hp = HP
-    this.speed = 2
+    this.speed = 120
     this.paddingX = 2
     this.paddingY = 2
     this.TEXTURE_CHANGING_COUNTDOWN = 8 // 快速闪烁

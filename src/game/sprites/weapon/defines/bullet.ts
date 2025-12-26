@@ -64,7 +64,7 @@ const DIRECTION_TEXTURE_MAPPING = {
 
 const WIDTH = 8
 const HEIGHT = 8
-const SPEED = 2
+const SPEED = 120
 
 class Bullet extends WeaponBase {
   width = WIDTH

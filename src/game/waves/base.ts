@@ -59,7 +59,7 @@ abstract class WaveStrategy implements IWaveStrategy {
   protected config: IWaveConfig = {
     enemyCount: 3,
     spacing: 20,
-    speed: 4,
+    speed: 240,
     interval: 30
   }
 

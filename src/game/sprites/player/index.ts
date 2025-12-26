@@ -343,7 +343,7 @@ class SmallTV extends Sprite {
     this.x = 0
     this.y = 0
     this.hp = PLAYER_MAX_HP
-    this.speed = 1
+    this.speed = 60
     this.paddingX = 1 // 缩小左右碰撞区域
     this.paddingY = 2 // 顶部天线不算碰撞区域
 

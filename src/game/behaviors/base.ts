@@ -53,12 +53,8 @@ abstract class BaseBehavior implements IBehavior {
   abstract clone (): IBehavior
 }
 
-// 60 FPS 基准
-const BASE_FPS = 60
-
 export {
-  BaseBehavior,
-  BASE_FPS
+  BaseBehavior
 }
 
 export type {

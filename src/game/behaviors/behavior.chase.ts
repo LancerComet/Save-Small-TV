@@ -4,7 +4,8 @@
  */
 
 import { Sprite } from '../../core/sprite'
-import { BaseBehavior, IBehavior, BehaviorTarget, BASE_FPS } from './base'
+import { getDistance, getDirection } from '../utils/collision'
+import { BaseBehavior, IBehavior, BehaviorTarget } from './base'
 
 interface IChaseConfig {
   /** 移动速度（默认使用精灵自身速度） */
@@ -27,19 +28,18 @@ class ChaseBehavior extends BaseBehavior {
   update (sprite: Sprite, target: BehaviorTarget, deltaTime: number): void {
     if (!target) return
 
-    // 计算朝向目标的方向
-    const dx = target.x - sprite.x
-    const dy = target.y - sprite.y
-    const distance = Math.sqrt(dx * dx + dy * dy)
+    // 使用统一的距离和方向计算
+    const distance = getDistance(sprite, target)
 
     if (distance > 0) {
+      const dir = getDirection(sprite, target)
       // 使用配置速度或精灵自身速度
       const baseSpeed = this.config.speed ?? sprite.speed
-      const speed = baseSpeed * BASE_FPS * deltaTime
+      const speed = baseSpeed * deltaTime
 
-      // 归一化方向并移动
-      sprite.x += (dx / distance) * speed
-      sprite.y += (dy / distance) * speed
+      // 按方向移动
+      sprite.x += dir.x * speed
+      sprite.y += dir.y * speed
     }
   }
 

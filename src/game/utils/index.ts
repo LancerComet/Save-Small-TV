@@ -17,6 +17,9 @@ function rand (radius: number = 1) {
   return Math.random() * radius
 }
 
+// 导出碰撞检测工具
+export * from './collision'
+
 export {
   floor,
   rand

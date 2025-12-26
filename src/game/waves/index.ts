@@ -9,6 +9,7 @@ import { SmallTV } from '../sprites/player'
 import { IWaveStrategy } from './base'
 import { HorizontalRushStrategy } from './defines/horizontal-rush'
 import { VerticalRushStrategy } from './defines/vertical-rush'
+import { BossWaveStrategy } from './defines/boss-wave'
 
 interface StrategyState {
   strategy: IWaveStrategy
@@ -37,7 +38,7 @@ class WaveManager {
       interval: 15,
       enemyCount: 3,
       spacing: 15,
-      speed: 1,
+      speed: 60,
       fromLeft: true,
       EnemyType: Sprite22
     }))
@@ -46,14 +47,20 @@ class WaveManager {
       interval: 30,
       enemyCount: 5,
       spacing: 25,
-      speed: 1.5
+      speed: 90
     }))
 
     this.addStrategy(new VerticalRushStrategy({
       interval: 60,
       enemyCount: 3,
       spacing: 20,
-      speed: 1.5
+      speed: 90
+    }))
+
+    // Boss 波次 - 每60秒
+    this.addStrategy(new BossWaveStrategy({
+      interval: 60,
+      speed: 30
     }))
   }
 
@@ -109,7 +116,7 @@ class WaveManager {
   /**
    * 更新并绘制所有波次敌人
    */
-  tickEnemies (stage: Stage, deltaTime: number) {
+  tickEnemies (stage: Stage, player: SmallTV | null, deltaTime: number) {
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
     const buffer = 100 // 超出屏幕多远后删除
@@ -118,20 +125,30 @@ class WaveManager {
       const enemy = this.waveEnemies[i]
       if (!enemy) continue
 
-      // 通过行为系统移动（波次敌人不需要追踪目标）
-      enemy.move(null, deltaTime)
+      // 更新能力（如果有）
+      if (enemy.abilities && enemy.abilities.length > 0) {
+        enemy.updateAbilities(player, deltaTime)
+      }
 
-      // 检查是否超出屏幕范围
-      if (enemy.x < bounds.left - buffer ||
+      // 通过行为系统移动（行为自己决定是否追踪）
+      enemy.move(player, deltaTime)
+
+      // 检查是否超出屏幕范围（精英敌人不会因出界被删除）
+      if (!enemy.isElite && (
+          enemy.x < bounds.left - buffer ||
           enemy.x > bounds.right + buffer ||
           enemy.y < bounds.top - buffer ||
-          enemy.y > bounds.bottom + buffer) {
+          enemy.y > bounds.bottom + buffer)) {
         this.waveEnemies.splice(i, 1)
         continue
       }
 
       // 检查是否死亡
       if (enemy.isDead) {
+        // 触发死亡能力
+        if (!enemy.hasTriggeredDeathAbilities) {
+          enemy.triggerDeathAbilities(player)
+        }
         this.waveEnemies.splice(i, 1)
         continue
       }
@@ -144,6 +161,23 @@ class WaveManager {
         screenX,
         screenY
       )
+
+      // 绘制血条（如果敌人有 maxHp）
+      if (enemy.showHealthBar && !enemy.isDead) {
+        const barWidth = enemy.width
+        const barHeight = 3
+        const barX = screenX
+        const barY = screenY - 6
+
+        // 背景
+        stage.context.fillStyle = '#333'
+        stage.context.fillRect(barX, barY, barWidth, barHeight)
+
+        // 血量
+        const hpRatio = Math.max(0, enemy.hp / enemy.maxHp)
+        stage.context.fillStyle = '#ff00ff'
+        stage.context.fillRect(barX, barY, barWidth * hpRatio, barHeight)
+      }
     }
   }
 
@@ -165,5 +199,6 @@ export {
   WaveManager,
   waveManager,
   HorizontalRushStrategy,
-  VerticalRushStrategy
+  VerticalRushStrategy,
+  BossWaveStrategy
 }

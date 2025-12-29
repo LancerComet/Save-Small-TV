@@ -1,6 +1,6 @@
 import { Stage } from '../../../core/stage'
 import { ChaseBehavior } from '../../behaviors/defines/chase.ts'
-import { Enemy, TheUncle } from '../../sprites/enemy'
+import { EnemyBase, TheUncle } from '../../sprites/enemy'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 
 /**
@@ -19,8 +19,8 @@ class UncleWaveStrategy implements IEnemyGenStrategy {
     enemyType: TheUncle
   }
 
-  execute (stage: Stage): Enemy[] {
-    const enemies: Enemy[] = []
+  execute (stage: Stage): EnemyBase[] {
+    const enemies: EnemyBase[] = []
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
     const stageSize = stage.logicalSize

@@ -1,11 +1,11 @@
 import { Sprite } from '../../../core/sprite'
 import { SpriteColorMap, SpriteBitmap, SpriteDirection } from '../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../core/utils'
-import { WeaponBase } from '../weapon/defines/_base.ts'
 import { Bullet } from '../weapon/defines/bullet.ts'
-import { PowerBullet } from '../weapon/defines/power-bullet.ts'
 import { Laser } from '../weapon/defines/laser.ts'
+import { PowerBullet } from '../weapon/defines/power-bullet.ts'
 import { WeaponType } from '../weapon/types.ts'
+import { WeaponBase } from '../weapon/weapon-base.ts'
 
 const PLAYER_INITIAL_HP = 100
 const PLAYER_INVINCIBLE_TIME = 1.5 // 受伤后无敌时间（秒）
@@ -435,7 +435,7 @@ class SmallTV extends Sprite {
   }
 
   constructor () {
-    super()
+    super('player')
     this.x = 0
     this.y = 0
     this.hp = PLAYER_INITIAL_HP

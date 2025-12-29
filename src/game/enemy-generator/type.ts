@@ -1,5 +1,5 @@
 import { Stage } from '../../core/stage'
-import { Enemy } from '../sprites/enemy'
+import { EnemyBase } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 
 /**
@@ -19,7 +19,7 @@ interface IEnemyGenConfig {
   speed: number
 
   /** 敌人类型 */
-  enemyType: new () => Enemy
+  enemyType: new () => EnemyBase
 }
 
 /**
@@ -29,7 +29,7 @@ interface IEnemyGenStrategy {
   name: string
   enabled: boolean
   config: IEnemyGenConfig
-  execute (stage: Stage, player: SmallTV): Enemy[]
+  execute (stage: Stage, player: SmallTV): EnemyBase[]
 }
 
 export type {

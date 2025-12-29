@@ -1,6 +1,6 @@
 import { Stage } from '../../../core/stage'
 import { FixedBehavior } from '../../behaviors/defines/fixed.ts'
-import { Enemy, FireballEnemy } from '../../sprites/enemy'
+import { EnemyBase, FireballEnemy } from '../../sprites/enemy'
 import { SmallTV } from '../../sprites/player'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 
@@ -23,8 +23,8 @@ class VerticalRushStrategy implements IEnemyGenStrategy {
 
   enabled: boolean = true
 
-  execute (stage: Stage, player: SmallTV): Enemy[] {
-    const enemies: Enemy[] = []
+  execute (stage: Stage, player: SmallTV): EnemyBase[] {
+    const enemies: EnemyBase[] = []
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
 

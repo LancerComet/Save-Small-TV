@@ -8,6 +8,9 @@ import { SpriteTextures } from './types.ts'
  * @class Sprite
  */
 class Sprite {
+  readonly itemType: string = ''
+  isPickedUp: boolean = false
+
   /**
    * Width.
    *
@@ -128,7 +131,7 @@ class Sprite {
    * @memberof Sprite
    */
   protected TEXTURE_CHANGING_COUNTDOWN: number | false = null
-  private $textureChangingCountdown: number = 0
+  private textureChangingCountdown: number = 0
 
   /**
    * Update texture animation (call once per frame from game loop).
@@ -145,13 +148,13 @@ class Sprite {
 
     // Handle texture animation countdown
     if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
-      if (this.$textureChangingCountdown <= 0) {
+      if (this.textureChangingCountdown <= 0) {
         this.currentTexture = this.currentTexture >= this.textures.length - 1
           ? 0
           : this.currentTexture + 1
-        this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+        this.textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
       } else {
-        this.$textureChangingCountdown--
+        this.textureChangingCountdown--
       }
     }
 
@@ -167,26 +170,15 @@ class Sprite {
   }
 
   /**
-   * Destroy this sprite.
-   *
-   * @memberof Sprite
-   */
-  $destroy () {
-    // No more rAF to cancel - cleanup is simpler now
-  }
-
-  /**
    * Creates an instance of Sprite.
    *
    * @memberof Sprite
    */
-  constructor () {
-    // Offscreen will be lazy-initialized in updateTexture()
-    // because subclass properties (width, height, textures) are not available yet
+  constructor (itemType: string) {
+    this.itemType = itemType
 
-    // Initialize texture countdown
     if (typeof this.TEXTURE_CHANGING_COUNTDOWN === 'number') {
-      this.$textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
+      this.textureChangingCountdown = this.TEXTURE_CHANGING_COUNTDOWN
     }
   }
 }

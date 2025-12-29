@@ -1,5 +1,5 @@
-import { Sprite } from '../../../../core/sprite'
-import { SpriteDirection } from '../../../../core/sprite/types.ts'
+import { Sprite } from '../../../core/sprite'
+import { SpriteDirection } from '../../../core/sprite/types.ts'
 
 abstract class WeaponBase extends Sprite {
   protected _direction: SpriteDirection = null

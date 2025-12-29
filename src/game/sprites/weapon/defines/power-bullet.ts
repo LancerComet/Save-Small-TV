@@ -1,7 +1,7 @@
 import { SpriteColorMap, SpriteBitmaps, SpriteDirection } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { IWeapon } from '../types.ts'
-import { WeaponBase } from './_base.ts'
+import { IWeapon, WeaponType } from '../types.ts'
+import { WeaponBase } from '../weapon-base.ts'
 
 const COLOR_MAP: SpriteColorMap = {
   0: 'transparent',
@@ -95,7 +95,7 @@ class PowerBullet extends WeaponBase {
   }
 
   constructor (param: IWeapon) {
-    super()
+    super(WeaponType.POWER_BULLET)
 
     this.x = param.x
     this.y = param.y

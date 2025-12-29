@@ -1,5 +1,5 @@
 import { Stage } from '../../core/stage'
-import { Enemy, Sprite22 } from '../sprites/enemy'
+import { EnemyBase, Sprite22 } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { HorizontalRushStrategy } from './defines/horizontal-rush'
 import { MikuWaveStrategy } from './defines/miku-wave.ts'
@@ -25,7 +25,7 @@ class EnemyGenerator {
   /**
    * 波次敌人列表.
    */
-  waveEnemies: Enemy[] = []
+  waveEnemies: EnemyBase[] = []
 
   /**
    * 添加策略

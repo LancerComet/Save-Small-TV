@@ -6,7 +6,7 @@ import { HomingAbility } from '../../../abilities/defines/homing.ts'
 import { ShootAbility } from '../../../abilities/defines/shoot.ts'
 import { ChaseBehavior } from '../../../behaviors/defines/chase.ts'
 import { IHomingProjectile, IProjectile } from '../../../projectile/types.ts'
-import { Enemy } from '../base.ts'
+import { EnemyBase } from '../enemy-base.ts'
 
 const WIDTH = 32
 const HEIGHT = 32
@@ -290,13 +290,13 @@ class ExplosionFragment implements IProjectile {
 /**
  * TheUncle - 鼠鼠.
  */
-class TheUncle extends Enemy {
+class TheUncle extends EnemyBase {
   readonly width = WIDTH
   readonly height = HEIGHT
   readonly textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
-    super()
+    super('the-uncle')
     this.x = 0
     this.y = 0
     this.hp = UNCLE_MAX_HP

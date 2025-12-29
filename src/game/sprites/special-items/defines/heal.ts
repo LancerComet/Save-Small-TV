@@ -1,7 +1,7 @@
 import { Sprite } from '../../../../core/sprite'
 import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { SpecialItemType } from '../types.ts'
+import { ISpecialItem, SpecialItemType } from '../types.ts'
 
 const WIDTH = 8
 const HEIGHT = 8
@@ -38,17 +38,14 @@ const BITMAPS: SpriteBitmaps = [
   ]
 ]
 
-class HealItem extends Sprite {
-  width = WIDTH
-  height = HEIGHT
-  textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
-
-  itemType = SpecialItemType.HEAL
-  lifeCountdown: number = 10
-  isPickedUp: boolean = false
+class HealItem extends Sprite implements ISpecialItem {
+  readonly width = WIDTH
+  readonly height = HEIGHT
+  readonly textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+  readonly lifeCountdown: number = 60
 
   constructor () {
-    super()
+    super(SpecialItemType.HEAL)
     this.paddingX = 0
     this.paddingY = 0
     this.TEXTURE_CHANGING_COUNTDOWN = 20 // 心跳闪烁效果

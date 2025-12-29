@@ -1,3 +1,5 @@
+import { Sprite } from '../../../core/sprite'
+
 enum SpecialItemType {
   POWER_BULLET = 'POWER_BULLET', // 强力子弹
   SHOTGUN = 'SHOTGUN', // 散弹枪
@@ -8,6 +10,17 @@ enum SpecialItemType {
   SPEED_UP = 'SPEED_UP' // 加速
 }
 
+interface ISpecialItem extends Sprite {
+  /**
+   * 道具未拾取时的存活时间, 秒.
+   */
+  lifeCountdown: number
+}
+
 export {
   SpecialItemType
+}
+
+export type {
+  ISpecialItem
 }

@@ -1,7 +1,7 @@
 import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { IWeapon } from '../types.ts'
-import { WeaponBase } from './_base.ts'
+import { IWeapon, WeaponType } from '../types.ts'
+import { WeaponBase } from '../weapon-base.ts'
 
 const WIDTH = 6
 const HEIGHT = 6
@@ -50,33 +50,6 @@ class SRAWMissile extends WeaponBase {
 
   // 当前飞行角度
   private currentAngle: number = 0
-
-  constructor (param: IWeapon, target?: { x: number; y: number; isDead?: boolean }) {
-    super()
-
-    this.x = param.x
-    this.y = param.y
-    this.speed = SPEED
-    this.paddingX = 0
-    this.paddingY = 0
-    this.target = target || null
-
-    // 初始角度朝向目标
-    if (this.target) {
-      const dx = this.target.x - this.x
-      const dy = this.target.y - this.y
-      this.currentAngle = Math.atan2(dy, dx)
-    } else {
-      // 没有目标就随机方向
-      this.currentAngle = Math.random() * Math.PI * 2
-    }
-
-    this.velocityX = Math.cos(this.currentAngle)
-    this.velocityY = Math.sin(this.currentAngle)
-    this.useAngleMovement = true
-
-    this.TEXTURE_CHANGING_COUNTDOWN = false
-  }
 
   /**
    * 更新导弹追踪
@@ -144,6 +117,33 @@ class SRAWMissile extends WeaponBase {
    */
   getTarget () {
     return this.target
+  }
+
+  constructor (param: IWeapon, target?: { x: number; y: number; isDead?: boolean }) {
+    super(WeaponType.SRAW)
+
+    this.x = param.x
+    this.y = param.y
+    this.speed = SPEED
+    this.paddingX = 0
+    this.paddingY = 0
+    this.target = target || null
+
+    // 初始角度朝向目标
+    if (this.target) {
+      const dx = this.target.x - this.x
+      const dy = this.target.y - this.y
+      this.currentAngle = Math.atan2(dy, dx)
+    } else {
+      // 没有目标就随机方向
+      this.currentAngle = Math.random() * Math.PI * 2
+    }
+
+    this.velocityX = Math.cos(this.currentAngle)
+    this.velocityY = Math.sin(this.currentAngle)
+    this.useAngleMovement = true
+
+    this.TEXTURE_CHANGING_COUNTDOWN = false
   }
 }
 

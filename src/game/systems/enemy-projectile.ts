@@ -1,7 +1,7 @@
 import { Stage } from '../../core/stage'
 import { enemyGenerator } from '../enemy-generator'
 import { IProjectile } from '../projectile/types'
-import { Enemy } from '../sprites/enemy'
+import { EnemyBase } from '../sprites/enemy'
 import { checkPointCollision } from '../utils/collision'
 import { enemySystem } from './enemy'
 import { playerSystem } from './player'
@@ -27,9 +27,9 @@ class EnemyProjectileSystem implements ISystem {
     }
 
     // 收集来自 Enemy 静态队列的投射物（主要是死亡时产生的）
-    if (Enemy.deathProjectiles.length > 0) {
-      this.projectiles.push(...Enemy.deathProjectiles)
-      Enemy.deathProjectiles = []
+    if (EnemyBase.deathProjectiles.length > 0) {
+      this.projectiles.push(...EnemyBase.deathProjectiles)
+      EnemyBase.deathProjectiles = []
     }
   }
 
@@ -97,7 +97,7 @@ class EnemyProjectileSystem implements ISystem {
 
   reset () {
     this.projectiles = []
-    Enemy.deathProjectiles = []
+    EnemyBase.deathProjectiles = []
   }
 }
 

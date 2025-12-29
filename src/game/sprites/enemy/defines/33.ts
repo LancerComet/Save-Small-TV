@@ -1,6 +1,6 @@
 import { SpriteColorMap, SpriteBitmaps } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { Enemy } from '../base.ts'
+import { EnemyBase } from '../enemy-base.ts'
 
 const WIDTH = 16
 const HEIGHT = 16
@@ -56,13 +56,13 @@ const BITMAPS: SpriteBitmaps = [
   ]
 ]
 
-class Sprite33 extends Enemy {
+class Sprite33 extends EnemyBase {
   width = WIDTH
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
-    super()
+    super('33')
     this.x = 0
     this.y = 0
     this.hp = HP

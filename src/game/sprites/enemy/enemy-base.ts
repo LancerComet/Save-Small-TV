@@ -4,7 +4,7 @@ import { IBehavior } from '../../behaviors/base.ts'
 import { ChaseBehavior } from '../../behaviors/defines/chase.ts'
 import { IProjectile } from '../../projectile/types.ts'
 
-class Enemy extends Sprite {
+class EnemyBase extends Sprite {
   /**
    * 静态死亡投射物队列 - 死亡能力产生的投射物会放在这里
    * tick 中的 EnemyProjectiles 会来收集
@@ -140,7 +140,7 @@ class Enemy extends Sprite {
 
     // 立即收集死亡能力产生的投射物到静态队列
     const deathProjectiles = this.collectProjectiles()
-    Enemy.deathProjectiles.push(...deathProjectiles)
+    EnemyBase.deathProjectiles.push(...deathProjectiles)
   }
 
   /**
@@ -165,5 +165,5 @@ class Enemy extends Sprite {
 }
 
 export {
-  Enemy
+  EnemyBase
 }

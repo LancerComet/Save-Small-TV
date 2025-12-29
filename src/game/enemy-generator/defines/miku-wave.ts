@@ -1,6 +1,6 @@
 import { Stage } from '../../../core/stage'
 import { ChaseBehavior } from '../../behaviors/defines/chase.ts'
-import { Enemy, MikuEnemy } from '../../sprites/enemy'
+import { EnemyBase, MikuEnemy } from '../../sprites/enemy'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 
 /**
@@ -20,8 +20,8 @@ class MikuWaveStrategy implements IEnemyGenStrategy {
     enemyType: MikuEnemy
   }
 
-  execute (stage: Stage): Enemy[] {
-    const enemies: Enemy[] = []
+  execute (stage: Stage): EnemyBase[] {
+    const enemies: EnemyBase[] = []
     const camera = stage.camera
     const bounds = camera.getWorldBounds()
 

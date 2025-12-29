@@ -1,7 +1,7 @@
 import { SpriteColorMap, SpriteBitmaps, SpriteDirection } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { IWeapon } from '../types.ts'
-import { WeaponBase } from './_base.ts'
+import { IWeapon, WeaponType } from '../types.ts'
+import { WeaponBase } from '../weapon-base.ts'
 
 const COLOR_MAP: SpriteColorMap = {
   0: 'transparent',
@@ -82,6 +82,41 @@ const SPREAD_ANGLE = 22.5 // 散射角度（度）
  * 散弹的单个弹丸 - 支持角度散射
  */
 class ShotgunPellet extends WeaponBase {
+  /**
+   * 创建散弹（返回多个弹丸，扇形散射）
+   * @param param 基础参数
+   * @param baseAngle 可选的基础角度（弧度），用于无极方向射击
+   */
+  static createPellets (param: IWeapon, baseAngle?: number): ShotgunPellet[] {
+    const pellets: ShotgunPellet[] = []
+    // 散射角度：-22.5°, 0°, +22.5° (转换为弧度)
+    const spreadAngles = [
+      -SPREAD_ANGLE * Math.PI / 180,
+      0,
+      SPREAD_ANGLE * Math.PI / 180
+    ]
+
+    for (const angleOffset of spreadAngles) {
+      const pellet = new ShotgunPellet({
+        x: param.x,
+        y: param.y,
+        direction: param.direction,
+        angle: angleOffset
+      })
+
+      // 如果有自定义的基础角度（无极方向射击），覆盖默认角度
+      if (baseAngle !== undefined) {
+        pellet.angle = baseAngle + angleOffset
+        pellet.velocityX = Math.cos(pellet.angle)
+        pellet.velocityY = Math.sin(pellet.angle)
+      }
+
+      pellets.push(pellet)
+    }
+
+    return pellets
+  }
+
   width = WIDTH
   height = HEIGHT
   attack = 10
@@ -122,7 +157,7 @@ class ShotgunPellet extends WeaponBase {
   }
 
   constructor (param: IWeapon & { angle?: number }) {
-    super()
+    super(WeaponType.SHOTGUN)
 
     this.x = param.x
     this.y = param.y
@@ -145,48 +180,6 @@ class ShotgunPellet extends WeaponBase {
   }
 }
 
-/**
- * Shotgun - 散弹枪
- * 一次发射多颗弹丸，扇形散射
- */
-class Shotgun {
-  /**
-   * 创建散弹（返回多个弹丸，扇形散射）
-   * @param param 基础参数
-   * @param baseAngle 可选的基础角度（弧度），用于无极方向射击
-   */
-  static createPellets (param: IWeapon, baseAngle?: number): ShotgunPellet[] {
-    const pellets: ShotgunPellet[] = []
-    // 散射角度：-22.5°, 0°, +22.5° (转换为弧度)
-    const spreadAngles = [
-      -SPREAD_ANGLE * Math.PI / 180,
-      0,
-      SPREAD_ANGLE * Math.PI / 180
-    ]
-
-    for (const angleOffset of spreadAngles) {
-      const pellet = new ShotgunPellet({
-        x: param.x,
-        y: param.y,
-        direction: param.direction,
-        angle: angleOffset
-      })
-
-      // 如果有自定义的基础角度（无极方向射击），覆盖默认角度
-      if (baseAngle !== undefined) {
-        pellet.angle = baseAngle + angleOffset
-        pellet.velocityX = Math.cos(pellet.angle)
-        pellet.velocityY = Math.sin(pellet.angle)
-      }
-
-      pellets.push(pellet)
-    }
-
-    return pellets
-  }
-}
-
 export {
-  ShotgunPellet,
-  Shotgun
+  ShotgunPellet
 }

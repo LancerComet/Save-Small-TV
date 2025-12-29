@@ -1,14 +1,14 @@
 import { Stage } from '../../core/stage'
 import { enemyGenerator } from '../enemy-generator'
-import { Enemy } from '../sprites/enemy'
+import { EnemyBase } from '../sprites/enemy'
 import { SmallTV } from '../sprites/player'
 import { GEN_WEAPON_INTERVAL } from '../sprites/weapon/config'
-import { WeaponBase } from '../sprites/weapon/defines/_base'
 import { Laser } from '../sprites/weapon/defines/laser'
 import { PowerBullet } from '../sprites/weapon/defines/power-bullet'
-import { Shotgun, ShotgunPellet } from '../sprites/weapon/defines/shotgun'
+import { ShotgunPellet } from '../sprites/weapon/defines/shotgun'
 import { SRAW_FIRE_INTERVAL, SRAW_MISSILE_COUNT, SRAWMissile } from '../sprites/weapon/defines/sraw'
 import { WeaponType, IWeapon } from '../sprites/weapon/types'
+import { WeaponBase } from '../sprites/weapon/weapon-base.ts'
 import { enemySystem } from './enemy'
 import { playerSystem } from './player'
 import { ISystem } from './types'
@@ -25,9 +25,9 @@ class WeaponSystem implements ISystem {
   /**
    * 获取最近的敌人列表
    */
-  getNearestEnemies (x: number, y: number, count: number): Enemy[] {
+  getNearestEnemies (x: number, y: number, count: number): EnemyBase[] {
     // 收集所有敌人
-    const allEnemies: Enemy[] = [
+    const allEnemies: EnemyBase[] = [
       ...enemySystem.enemies,
       ...enemyGenerator.waveEnemies
     ].filter(e => e && !e.isDead)
@@ -102,7 +102,7 @@ class WeaponSystem implements ISystem {
       // Handle different weapon types
       if (player.currentWeaponType === WeaponType.SHOTGUN) {
         // Shotgun creates multiple pellets
-        const pellets = Shotgun.createPellets({
+        const pellets = ShotgunPellet.createPellets({
           direction: player.weaponDirection,
           x: player.x,
           y: player.y

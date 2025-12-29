@@ -6,10 +6,10 @@ import {
   ENEMIES_PER_SPAWN,
   SCORE_PER_LEVEL
 } from '../config'
-import { Enemy, Sprite22, Sprite33 } from '../sprites/enemy'
+import { EnemyBase, Sprite22, Sprite33 } from '../sprites/enemy'
 import { IkunEnemy } from '../sprites/enemy/defines/ikun'
 import { ITEM_DROP_CHANCE } from '../sprites/special-items/config'
-import { WeaponBase } from '../sprites/weapon/defines/_base'
+import { WeaponBase } from '../sprites/weapon/weapon-base.ts'
 import { GameState } from '../state'
 import { checkSpriteCollision } from '../utils/collision'
 import { floor, rand } from '../utils/math'
@@ -20,7 +20,7 @@ import { specialItemSystem } from './special-item'
 import { ISystem } from './types'
 
 class EnemySystem implements ISystem {
-  enemies: Enemy[] = []
+  enemies: EnemyBase[] = []
   genEnemyCountdown = GEN_ENEMY_INTERVAL
 
   private getRandomNormalEnemy () {
@@ -104,7 +104,7 @@ class EnemySystem implements ISystem {
   /**
    * Detect player distance.
    */
-  detectPlayer (enemy: Enemy) {
+  detectPlayer (enemy: EnemyBase) {
     // 死亡的敌人不会伤害玩家
     if (enemy.isDead) { return }
 
@@ -123,7 +123,7 @@ class EnemySystem implements ISystem {
   /**
    * Auto move single enemy.
    */
-  autoMove (enemy: Enemy, deltaTime: number) {
+  autoMove (enemy: EnemyBase, deltaTime: number) {
     const player = playerSystem.instance
 
     if (enemy.isDead) {
@@ -179,7 +179,7 @@ class EnemySystem implements ISystem {
   /**
    * Draw single enemy.
    */
-  draw (stage: Stage, enemy: Enemy) {
+  draw (stage: Stage, enemy: EnemyBase) {
     enemy.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(enemy.x, enemy.y)
     stage.context.drawImage(
@@ -205,7 +205,7 @@ class EnemySystem implements ISystem {
    * 检测武器与敌人的碰撞（公共方法）
    * 用于 Waves 和 Weapons 的碰撞检测
    */
-  checkWeaponHitEnemy (weapon: WeaponBase, enemy: Enemy): boolean {
+  checkWeaponHitEnemy (weapon: WeaponBase, enemy: EnemyBase): boolean {
     if (!enemy || enemy.isDead) return false
 
     if (checkSpriteCollision(weapon, enemy)) {

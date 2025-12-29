@@ -1,6 +1,6 @@
 import { SpriteBitmaps, SpriteColorMap } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { Enemy } from '../base.ts'
+import { EnemyBase } from '../enemy-base.ts'
 
 const WIDTH = 16
 const HEIGHT = 16
@@ -60,13 +60,13 @@ const BITMAPS: SpriteBitmaps = [
 /**
  * Fireball Enemy.
  */
-class FireballEnemy extends Enemy {
+class FireballEnemy extends EnemyBase {
   width = WIDTH
   height = HEIGHT
   textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
-    super()
+    super('fireball')
     this.x = 0
     this.y = 0
     this.hp = HP

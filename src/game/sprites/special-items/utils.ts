@@ -1,4 +1,5 @@
 import { Sprite } from '../../../core/sprite'
+import { ConstructorOf } from '../../../types'
 import { rand } from '../../utils/math.ts'
 import { HealItem } from './defines/heal'
 import { LaserItem } from './defines/laser'
@@ -7,23 +8,14 @@ import { ShieldItem } from './defines/shield'
 import { ShotgunItem } from './defines/shotgun'
 import { SpeedUpItem } from './defines/speed-up'
 import { SRAWItem } from './defines/sraw'
-import { SpecialItemType } from './types.ts'
-
-/**
- * 道具接口
- */
-interface ISpecialItem extends Sprite {
-  itemType: SpecialItemType
-  lifeCountdown: number
-  isPickedUp: boolean
-}
+import { ISpecialItem } from './types.ts'
 
 /**
  * 道具掉落权重配置
  * weight 越高，掉落概率越大
  */
 interface ItemDropConfig {
-  ItemClass: new () => ISpecialItem
+  ItemClass: ConstructorOf<ISpecialItem>
   weight: number
 }
 

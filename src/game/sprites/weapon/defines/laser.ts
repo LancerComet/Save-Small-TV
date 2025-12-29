@@ -1,13 +1,8 @@
-/**
- * Laser Weapon - 激光武器
- * 可以穿透多个敌人的激光束，支持任意角度发射
- */
-
 import { Offscreen } from '../../../../core/sprite/offscreen'
 import { SpriteDirection } from '../../../../core/sprite/types.ts'
-import { Enemy } from '../../../sprites/enemy/base'
-import { IWeapon } from '../types.ts'
-import { WeaponBase } from './_base.ts'
+import { EnemyBase } from '../../enemy/enemy-base.ts'
+import { IWeapon, WeaponType } from '../types.ts'
+import { WeaponBase } from '../weapon-base.ts'
 
 const SPEED = 200 // 激光速度更快
 const DAMAGE = 8 // 单发伤害较低，但可穿透
@@ -20,7 +15,7 @@ const LASER_WIDTH = 4 // 激光宽度
 class Laser extends WeaponBase {
   attack = DAMAGE
   pierceCount: number = 5 // 最多穿透5个敌人
-  hitEnemies: Set<Enemy> = new Set() // 已击中的敌人
+  hitEnemies: Set<EnemyBase> = new Set() // 已击中的敌人
 
   // 起始位置，用于计算射程
   startX: number = 0
@@ -33,25 +28,6 @@ class Laser extends WeaponBase {
 
   // 闪烁计数器
   private blinkCounter: number = 0
-
-  constructor (param: IWeapon) {
-    super()
-    this.x = param.x
-    this.y = param.y
-    this.startX = param.x
-    this.startY = param.y
-    this.speed = SPEED
-    this.direction = param.direction
-
-    // 设置碰撞盒尺寸
-    this.width = LASER_LENGTH
-    this.height = LASER_WIDTH
-    this.paddingX = 0
-    this.paddingY = 0
-
-    // 根据四方向设置默认角度
-    this.setDirectionAngle(param.direction)
-  }
 
   /**
    * 根据四方向设置角度
@@ -129,7 +105,7 @@ class Laser extends WeaponBase {
   /**
    * 检查是否可以击中敌人（穿透判定）
    */
-  canHitEnemy (enemy: Enemy): boolean {
+  canHitEnemy (enemy: EnemyBase): boolean {
     if (this.hitEnemies.has(enemy)) {
       return false // 已经击中过
     }
@@ -142,7 +118,7 @@ class Laser extends WeaponBase {
   /**
    * 记录击中敌人
    */
-  recordHit (enemy: Enemy): void {
+  recordHit (enemy: EnemyBase): void {
     this.hitEnemies.add(enemy)
   }
 
@@ -154,6 +130,25 @@ class Laser extends WeaponBase {
     const dy = this.y - this.startY
     const dist = Math.sqrt(dx * dx + dy * dy)
     return dist > this.maxRange || this.hitEnemies.size >= this.pierceCount
+  }
+
+  constructor (param: IWeapon) {
+    super(WeaponType.LASER)
+    this.x = param.x
+    this.y = param.y
+    this.startX = param.x
+    this.startY = param.y
+    this.speed = SPEED
+    this.direction = param.direction
+
+    // 设置碰撞盒尺寸
+    this.width = LASER_LENGTH
+    this.height = LASER_WIDTH
+    this.paddingX = 0
+    this.paddingY = 0
+
+    // 根据四方向设置默认角度
+    this.setDirectionAngle(param.direction)
   }
 }
 

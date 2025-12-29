@@ -1,8 +1,8 @@
 import { Stage } from '../../core/stage'
 import { enemyGenerator } from '../enemy-generator'
-import { Enemy } from '../sprites/enemy'
-import { WeaponBase } from '../sprites/weapon/defines/_base'
+import { EnemyBase } from '../sprites/enemy'
 import { Laser } from '../sprites/weapon/defines/laser'
+import { WeaponBase } from '../sprites/weapon/weapon-base.ts'
 import { GameState } from '../state'
 import { checkSpriteCollision } from '../utils/collision'
 import { effectSystem } from './effect'
@@ -14,7 +14,7 @@ class WaveSystem implements ISystem {
   /**
    * 检测波次敌人与玩家的碰撞
    */
-  detectPlayer (enemy: Enemy) {
+  detectPlayer (enemy: EnemyBase) {
     if (enemy.isDead) return
 
     for (const player of playerSystem.allPlayers) {

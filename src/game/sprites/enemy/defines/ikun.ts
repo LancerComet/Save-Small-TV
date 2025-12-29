@@ -4,7 +4,7 @@ import { bitmapsToTextures } from '../../../../core/utils'
 import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from '../../../abilities/base.ts'
 import { IProjectile } from '../../../projectile/types.ts'
 import { getDirection, getDistance } from '../../../utils/collision.ts'
-import { Enemy } from '../base.ts'
+import { EnemyBase } from '../enemy-base.ts'
 
 const WIDTH = 16
 const HEIGHT = 14
@@ -228,17 +228,30 @@ class BasketballBullet implements IProjectile {
 // 小黑子敌人定义.
 // =========================
 
-class IkunEnemy extends Enemy {
-  width = WIDTH
-  height = HEIGHT
-  textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+class IkunEnemy extends EnemyBase {
+  readonly width = WIDTH
+  readonly height = HEIGHT
+  readonly textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   // 用于抖动效果
   private shakeTime: number = 0
   private shakeIntensity: number = 2
 
+  /**
+   * 愤怒抖动效果
+   */
+  move (target: Sprite | null, deltaTime: number): void {
+    super.move(target, deltaTime)
+
+    this.shakeTime += deltaTime * 20
+    const shakeX = Math.sin(this.shakeTime) * this.shakeIntensity * deltaTime
+    const shakeY = Math.cos(this.shakeTime * 1.3) * this.shakeIntensity * deltaTime
+    this.x += shakeX
+    this.y += shakeY
+  }
+
   constructor () {
-    super()
+    super('ikun')
     this.hp = HP
     this.speed = 45
     this.paddingX = 3
@@ -256,19 +269,6 @@ class IkunEnemy extends Enemy {
       ballDamage: 12,
       ballSize: 3
     }))
-  }
-
-  /**
-   * 愤怒抖动效果
-   */
-  move (target: Sprite | null, deltaTime: number): void {
-    super.move(target, deltaTime)
-
-    this.shakeTime += deltaTime * 20
-    const shakeX = Math.sin(this.shakeTime) * this.shakeIntensity * deltaTime
-    const shakeY = Math.cos(this.shakeTime * 1.3) * this.shakeIntensity * deltaTime
-    this.x += shakeX
-    this.y += shakeY
   }
 }
 

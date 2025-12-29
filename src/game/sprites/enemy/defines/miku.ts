@@ -3,7 +3,7 @@ import { bitmapsToTextures } from '../../../../core/utils'
 import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from '../../../abilities/base.ts'
 import { IProjectile } from '../../../projectile/types.ts'
 import { getDirection, getDistance } from '../../../utils/collision.ts'
-import { Enemy } from '../base.ts'
+import { EnemyBase } from '../enemy-base.ts'
 
 const WIDTH = 12
 const HEIGHT = 12
@@ -362,13 +362,13 @@ class LeekBoomerang implements IProjectile {
 // 初音未来敌人定义.
 // =========================
 
-class MikuEnemy extends Enemy {
-  width = WIDTH
-  height = HEIGHT
-  textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
+class MikuEnemy extends EnemyBase {
+  readonly width = WIDTH
+  readonly height = HEIGHT
+  readonly textures = bitmapsToTextures(WIDTH, HEIGHT, BITMAPS, COLOR_MAP)
 
   constructor () {
-    super()
+    super('miku')
     this.hp = HP
     this.speed = 40
     this.paddingX = 2

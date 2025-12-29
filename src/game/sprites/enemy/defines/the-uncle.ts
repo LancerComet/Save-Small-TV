@@ -1,7 +1,11 @@
 import { SpriteBitmaps, SpriteColorMap } from '../../../../core/sprite/types.ts'
 import { bitmapsToTextures } from '../../../../core/utils'
-import { ShootAbility, BurstAbility, HomingAbility, ExplodeAbility } from '../../../abilities'
-import { ChaseBehavior } from '../../../behaviors'
+import { BurstShootAbility } from '../../../abilities/defines/burst-shoot.ts'
+import { ExplodeAbility } from '../../../abilities/defines/explode.ts'
+import { HomingAbility } from '../../../abilities/defines/homing.ts'
+import { ShootAbility } from '../../../abilities/defines/shoot.ts'
+import { ChaseBehavior } from '../../../behaviors/defines/chase.ts'
+import { IHomingProjectile, IProjectile } from '../../../projectile/types.ts'
 import { Enemy } from '../base.ts'
 
 const WIDTH = 32
@@ -118,6 +122,172 @@ const BITMAPS: SpriteBitmaps = [
 ]
 
 /**
+ * 鼠鼠追踪武器.
+ */
+class HomingBullet implements IHomingProjectile {
+  private target: { x: number; y: number } | null = null
+
+  x: number
+  y: number
+  vx: number
+  vy: number
+
+  readonly damage: number
+  readonly speed: number
+  readonly turnSpeed: number
+  readonly size: number
+  readonly color: string
+  lifetime: number
+
+  setTarget (target: { x: number; y: number } | null): void {
+    this.target = target
+  }
+
+  update (deltaTime: number): void {
+    this.lifetime -= deltaTime
+
+    if (this.target) {
+      // 计算朝向目标的方向
+      const dx = this.target.x - this.x
+      const dy = this.target.y - this.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+
+      if (dist > 0) {
+        const targetVx = (dx / dist) * this.speed
+        const targetVy = (dy / dist) * this.speed
+
+        // 平滑转向（考虑 deltaTime）
+        const lerpFactor = 1 - Math.exp(-this.turnSpeed * deltaTime)
+        this.vx += (targetVx - this.vx) * lerpFactor
+        this.vy += (targetVy - this.vy) * lerpFactor
+      }
+    }
+
+    this.x += this.vx * deltaTime
+    this.y += this.vy * deltaTime
+  }
+
+  draw (ctx: CanvasRenderingContext2D): void {
+    // 绘制追踪弹（菱形）
+    ctx.fillStyle = this.color
+    ctx.beginPath()
+    ctx.moveTo(this.x, this.y - this.size)
+    ctx.lineTo(this.x + this.size, this.y)
+    ctx.lineTo(this.x, this.y + this.size)
+    ctx.lineTo(this.x - this.size, this.y)
+    ctx.closePath()
+    ctx.fill()
+
+    // 尾焰（使用速度的单位向量）
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy)
+    if (speed > 0) {
+      const dirX = this.vx / speed
+      const dirY = this.vy / speed
+      ctx.fillStyle = '#ff66ff'
+      const tailX = this.x - dirX * this.size * 2
+      const tailY = this.y - dirY * this.size * 2
+      ctx.beginPath()
+      ctx.arc(tailX, tailY, this.size * 0.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  isOutOfBounds (width: number, height: number): boolean {
+    return (
+      this.lifetime <= 0 ||
+      this.x < -this.size * 2 ||
+      this.x > width + this.size * 2 ||
+      this.y < -this.size * 2 ||
+      this.y > height + this.size * 2
+    )
+  }
+
+  constructor (
+    x: number,
+    y: number,
+    speed: number = 2,
+    damage: number = 15,
+    turnSpeed: number = 0.05,
+    lifetime: number = 5
+  ) {
+    this.x = x
+    this.y = y
+    this.speed = speed
+    this.damage = damage
+    this.turnSpeed = turnSpeed
+    this.size = 5
+    this.color = '#ff00ff'
+    this.lifetime = lifetime
+    this.vx = 0
+    this.vy = 0
+  }
+}
+
+/**
+ * 鼠鼠爆炸碎片.
+ */
+class ExplosionFragment implements IProjectile {
+  readonly damage: number
+  readonly size: number
+  readonly color: string
+
+  x: number
+  y: number
+  vx: number
+  vy: number
+  lifetime: number
+
+  update (deltaTime: number): void {
+    this.lifetime -= deltaTime
+    this.x += this.vx * deltaTime
+    this.y += this.vy * deltaTime
+    // 减速
+    this.vx *= 0.98
+    this.vy *= 0.98
+  }
+
+  draw (ctx: CanvasRenderingContext2D): void {
+    const alpha = Math.min(1, this.lifetime)
+    ctx.fillStyle = this.color
+    ctx.globalAlpha = alpha
+    ctx.fillRect(
+      this.x - this.size / 2,
+      this.y - this.size / 2,
+      this.size,
+      this.size
+    )
+    ctx.globalAlpha = 1
+  }
+
+  isOutOfBounds (width: number, height: number): boolean {
+    return (
+      this.lifetime <= 0 ||
+      this.x < -10 ||
+      this.x > width + 10 ||
+      this.y < -10 ||
+      this.y > height + 10
+    )
+  }
+
+  constructor (
+    x: number,
+    y: number,
+    angle: number,
+    speed: number,
+    damage: number = 20
+  ) {
+    this.x = x
+    this.y = y
+    this.vx = Math.cos(angle) * speed
+    this.vy = Math.sin(angle) * speed
+    this.damage = damage
+    this.size = 3
+    this.color = '#ffaa00'
+    this.lifetime = 1.5
+  }
+}
+
+/**
  * TheUncle - 鼠鼠.
  */
 class TheUncle extends Enemy {
@@ -157,7 +327,7 @@ class TheUncle extends Enemy {
     }))
 
     // 2. 爆发射击 - 圆形弹幕（官僚主义）
-    this.addAbility(new BurstAbility({
+    this.addAbility(new BurstShootAbility({
       cooldown: 5,
       bulletCount: 12,
       bulletSpeed: 120,
@@ -173,14 +343,16 @@ class TheUncle extends Enemy {
       bulletSpeed: 60,
       bulletDamage: 20,
       turnSpeed: 3,
-      lifetime: 8
+      lifetime: 8,
+      BulletType: HomingBullet
     }))
 
     // 4. 死亡爆炸（最后的怒气）
     this.addAbility(new ExplodeAbility({
       fragmentCount: 16,
       fragmentSpeed: 240,
-      fragmentDamage: 25
+      fragmentDamage: 25,
+      FragmentType: ExplosionFragment
     }))
   }
 }

@@ -1,4 +1,4 @@
-import { rand } from '../../utils'
+import { rand } from '../../utils/math.ts'
 
 /**
  * 粒子配置接口

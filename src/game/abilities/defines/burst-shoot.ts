@@ -1,50 +1,41 @@
-import { EnemyBullet } from '../sprites/enemy/enemy-bullet'
-import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
+import { EnemyBullet } from '../../projectile/defines/enemy-bullet.ts'
+import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from '../base.ts'
 
 interface IBurstConfig {
   /** 冷却时间（秒） */
   cooldown: number
+
   /** 子弹数量 */
   bulletCount: number
+
   /** 子弹速度 */
-  bulletSpeed: number
+  bulletSpeed: number // pixels per second
+
   /** 子弹伤害 */
   bulletDamage: number
+
   /** 扩散角度（弧度），0 表示圆形发射 */
   spreadAngle: number
+
   /** 是否瞄准目标 */
   aimAtTarget: boolean
+
   /** 子弹颜色 */
   bulletColor: string
 }
 
-const DEFAULT_CONFIG: IBurstConfig = {
-  cooldown: 3,
-  bulletCount: 8,
-  bulletSpeed: 150, // pixels per second
-  bulletDamage: 8,
-  spreadAngle: 0, // 0 = 360度圆形
-  aimAtTarget: false,
-  bulletColor: '#ff6600'
-}
-
 /**
- * Burst Ability - 爆发射击能力
- * 一次发射多发子弹（扇形或圆形）
+ * 爆发射击能力, 一次发射多发子弹（扇形或圆形）.
  */
-class BurstAbility extends AbilityBase {
-  name = 'burst'
-  private config: IBurstConfig
+class BurstShootAbility extends AbilityBase {
+  private readonly config: IBurstConfig
   private timer: number = 0
-
-  constructor (config: Partial<IBurstConfig> = {}) {
-    super()
-    this.config = { ...DEFAULT_CONFIG, ...config }
-    this.timer = Math.random() * this.config.cooldown + 1
-  }
+  readonly name = 'burst'
 
   update (owner: AbilityOwner, target: AbilityTarget, deltaTime: number): void {
-    if (!this.enabled) return
+    if (!this.enabled) {
+      return
+    }
 
     this.timer -= deltaTime
 
@@ -85,9 +76,22 @@ class BurstAbility extends AbilityBase {
   }
 
   clone (): IAbility {
-    return new BurstAbility({ ...this.config })
+    return new BurstShootAbility({ ...this.config })
+  }
+
+  init () {
+  }
+
+  onDeath () {
+  }
+
+  constructor (config: IBurstConfig) {
+    super()
+    this.config = config
+    this.timer = Math.random() * this.config.cooldown + 1
   }
 }
 
-export { BurstAbility }
-export type { IBurstConfig }
+export {
+  BurstShootAbility
+}

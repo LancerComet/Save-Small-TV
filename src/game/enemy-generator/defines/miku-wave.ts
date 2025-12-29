@@ -1,5 +1,5 @@
 import { Stage } from '../../../core/stage'
-import { ChaseBehavior } from '../../behaviors'
+import { ChaseBehavior } from '../../behaviors/defines/chase.ts'
 import { Enemy, MikuEnemy } from '../../sprites/enemy'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
 

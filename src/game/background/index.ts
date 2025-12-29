@@ -1,23 +1,18 @@
-/**
- * Space background with parallax stars.
- * Creates a sense of movement in infinite space.
- */
-
 interface Star {
   x: number
   y: number
   size: number
   brightness: number
-  layer: number  // 0 = far (slow), 1 = mid, 2 = near (fast)
+  layer: number // 0 = far (slow), 1 = mid, 2 = near (fast)
 }
 
 // Star colors for different brightness levels
 const STAR_COLORS = [
-  '#666666',  // dim
+  '#666666', // dim
   '#888888',
   '#aaaaaa',
   '#cccccc',
-  '#ffffff',  // bright
+  '#ffffff' // bright
 ]
 
 // Parallax speed multipliers for each layer
@@ -26,6 +21,10 @@ const LAYER_SPEEDS = [0.1, 0.3, 0.6]
 // Star density per layer
 const STARS_PER_LAYER = [80, 40, 20]
 
+/**
+ * Space background with parallax stars.
+ * Creates a sense of movement in infinite space.
+ */
 class SpaceBackground {
   private stars: Star[] = []
   private viewportWidth: number = 0
@@ -54,12 +53,12 @@ class SpaceBackground {
     const maxWidth = 1920
     const maxHeight = 1080
     for (let layer = 0; layer < 3; layer++) {
-      const count = STARS_PER_LAYER[layer] * 4  // More stars for larger area
+      const count = STARS_PER_LAYER[layer] * 4 // More stars for larger area
       for (let i = 0; i < count; i++) {
         this.stars.push({
           x: Math.random() * (maxWidth + this.BUFFER * 2) - this.BUFFER,
           y: Math.random() * (maxHeight + this.BUFFER * 2) - this.BUFFER,
-          size: layer === 2 ? 2 : 1,  // Near stars are bigger
+          size: layer === 2 ? 2 : 1, // Near stars are bigger
           brightness: Math.floor(Math.random() * STAR_COLORS.length),
           layer
         })

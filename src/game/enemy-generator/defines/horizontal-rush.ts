@@ -4,7 +4,7 @@
  */
 
 import { Stage } from '../../../core/stage'
-import { FixedBehavior } from '../../behaviors'
+import { FixedBehavior } from '../../behaviors/defines/fixed.ts'
 import { Enemy, FireballEnemy } from '../../sprites/enemy'
 import { SmallTV } from '../../sprites/player'
 import { IEnemyGenConfig, IEnemyGenStrategy } from '../type.ts'
@@ -57,7 +57,7 @@ class HorizontalRushStrategy implements IEnemyGenStrategy {
       enemy.scoreValue = 20
 
       // 设置水平固定移动行为
-      enemy.setBehavior(FixedBehavior.horizontal(this.fromLeft ? 1 : -1, speed))
+      enemy.setBehavior(FixedBehavior.createHorizontalBehavior(this.fromLeft ? 1 : -1, speed))
 
       enemies.push(enemy)
     }

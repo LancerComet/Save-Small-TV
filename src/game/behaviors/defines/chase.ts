@@ -3,9 +3,9 @@
  * 精灵朝向目标移动
  */
 
-import { Sprite } from '../../core/sprite'
-import { getDistance, getDirection } from '../utils/collision'
-import { BaseBehavior, IBehavior, BehaviorTarget } from './base'
+import { Sprite } from '../../../core/sprite'
+import { getDistance, getDirection } from '../../utils/collision.ts'
+import { BaseBehavior, IBehavior, BehaviorTarget } from '../base.ts'
 
 interface IChaseConfig {
   /** 移动速度（默认使用精灵自身速度） */
@@ -16,14 +16,9 @@ interface IChaseConfig {
  * 追踪行为 - 朝向目标移动
  */
 class ChaseBehavior extends BaseBehavior {
-  name = 'Chase'
+  private readonly config: IChaseConfig
 
-  private config: IChaseConfig
-
-  constructor (config?: IChaseConfig) {
-    super()
-    this.config = config || {}
-  }
+  readonly name = 'Chase'
 
   update (sprite: Sprite, target: BehaviorTarget, deltaTime: number): void {
     if (!target) return
@@ -44,7 +39,18 @@ class ChaseBehavior extends BaseBehavior {
   }
 
   clone (): IBehavior {
-    return new ChaseBehavior({ ...this.config })
+    return new ChaseBehavior({
+      ...this.config
+    })
+  }
+
+  init () {
+    // ...
+  }
+
+  constructor (config?: IChaseConfig) {
+    super()
+    this.config = config || {}
   }
 }
 

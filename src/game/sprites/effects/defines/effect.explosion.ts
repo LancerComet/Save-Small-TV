@@ -1,4 +1,4 @@
-import { rand } from '../../../utils'
+import { rand } from '../../../utils/math.ts'
 import { ParticleBase, IParticleConfig } from '../base.ts'
 
 // 爆炸颜色数组 - 火焰色调

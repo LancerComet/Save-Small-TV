@@ -1,6 +1,8 @@
 import { Sprite } from '../../../core/sprite'
-import { IAbility, IProjectile } from '../../abilities'
-import { IBehavior, ChaseBehavior } from '../../behaviors'
+import { IAbility } from '../../abilities/base.ts'
+import { IBehavior } from '../../behaviors/base.ts'
+import { ChaseBehavior } from '../../behaviors/defines/chase.ts'
+import { IProjectile } from '../../projectile/types.ts'
 
 class Enemy extends Sprite {
   /**
@@ -10,7 +12,7 @@ class Enemy extends Sprite {
   static deathProjectiles: IProjectile[] = []
 
   /**
-   * Wether this sprite is dead.
+   * Whether this sprite is dead.
    *
    * @readonly
    * @type {boolean}

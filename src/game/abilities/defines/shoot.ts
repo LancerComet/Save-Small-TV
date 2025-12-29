@@ -1,11 +1,6 @@
-/**
- * Shoot Ability - 射击能力
- * 向目标发射普通子弹
- */
-
-import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
-import { EnemyBullet } from '../sprites/enemy/enemy-bullet'
-import { getDistance, getDirection } from '../utils/collision'
+import { EnemyBullet } from '../../projectile/defines/enemy-bullet.ts'
+import { getDistance, getDirection } from '../../utils/collision.ts'
+import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from '../base.ts'
 
 interface IShootConfig {
   /** 冷却时间（秒） */
@@ -28,17 +23,14 @@ const DEFAULT_CONFIG: IShootConfig = {
   bulletColor: '#ff0000'
 }
 
+/**
+ * 射击能力, 向目标发射普通子弹.
+ */
 class ShootAbility extends AbilityBase {
-  name = 'shoot'
-  private config: IShootConfig
+  private readonly config: IShootConfig
   private timer: number = 0
 
-  constructor (config: Partial<IShootConfig> = {}) {
-    super()
-    this.config = { ...DEFAULT_CONFIG, ...config }
-    // 随机初始冷却，避免所有敌人同时射击
-    this.timer = Math.random() * this.config.cooldown
-  }
+  readonly name = 'shoot'
 
   update (owner: AbilityOwner, target: AbilityTarget, deltaTime: number): void {
     if (!this.enabled || !target) return
@@ -73,6 +65,18 @@ class ShootAbility extends AbilityBase {
 
   clone (): IAbility {
     return new ShootAbility({ ...this.config })
+  }
+
+  init (): void {
+  }
+
+  onDeath (): void {
+  }
+
+  constructor (config: Partial<IShootConfig> = {}) {
+    super()
+    this.config = { ...DEFAULT_CONFIG, ...config }
+    this.timer = Math.random() * this.config.cooldown // 随机初始冷却，避免所有敌人同时射击
   }
 }
 

@@ -1,12 +1,4 @@
 /**
- * Collision Utility - 碰撞检测工具
- * 
- * 统一管理所有碰撞检测逻辑，避免代码重复
- */
-
-import { Sprite } from '../../core/sprite'
-
-/**
  * 可碰撞对象接口
  */
 interface ICollidable {
@@ -132,7 +124,11 @@ function getDirection (a: ICollidable, b: ICollidable): { x: number; y: number }
   }
 }
 
-export type { ICollidable, IBounds }
+export type {
+  ICollidable,
+  IBounds
+}
+
 export {
   getBounds,
   checkAABB,

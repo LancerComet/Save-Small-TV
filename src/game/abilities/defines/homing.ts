@@ -1,47 +1,53 @@
-/**
- * Homing Ability - 追踪弹能力
- * 发射会追踪目标的子弹
- */
-
-import { HomingBullet } from '../sprites/enemy/enemy-bullet'
-import { getDistance, getDirection } from '../utils'
-import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from './base'
+import { ConstructorOf } from '../../../types'
+import { IHomingProjectile } from '../../projectile/types.ts'
+import { getDistance, getDirection } from '../../utils/collision.ts'
+import { AbilityBase, AbilityOwner, AbilityTarget, IAbility } from '../base.ts'
 
 interface IHomingConfig {
-  /** 冷却时间（秒） */
+  /**
+   * 冷却时间 (秒).
+   */
   cooldown: number
-  /** 子弹速度 */
+
+  /**
+   * 子弹速度, pixels per second.
+   */
   bulletSpeed: number
-  /** 子弹伤害 */
+
+  /**
+   * 子弹伤害.
+   */
   bulletDamage: number
-  /** 转向速度 */
+
+  /**
+   * 转向速度.
+   */
   turnSpeed: number
-  /** 子弹存活时间（秒） */
+
+  /**
+   * 子弹存活时间（秒）.
+   */
   lifetime: number
+
+  /**
+   * 子弹构造类.
+   * @constructor
+   */
+  BulletType: ConstructorOf<IHomingProjectile>
 }
 
-const DEFAULT_CONFIG: IHomingConfig = {
-  cooldown: 4,
-  bulletSpeed: 90, // pixels per second
-  bulletDamage: 15,
-  turnSpeed: 2, // radians per second adjustment
-  lifetime: 6
-}
-
+/**
+ * 追踪弹能力, 发射会追踪目标的子弹.
+ */
 class HomingAbility extends AbilityBase {
-  name = 'homing'
-  private config: IHomingConfig
+  readonly name = 'homing'
+
+  private readonly config: IHomingConfig
   private timer: number = 0
-  private activeBullets: HomingBullet[] = []
+  private activeBullets: IHomingProjectile[] = []
   private currentTarget: AbilityTarget = null
 
-  constructor (config: Partial<IHomingConfig> = {}) {
-    super()
-    this.config = { ...DEFAULT_CONFIG, ...config }
-    this.timer = Math.random() * this.config.cooldown + 2
-  }
-
-  update (owner: AbilityOwner, target: AbilityTarget, deltaTime: number): void {
+  update (owner: AbilityOwner, target: AbilityTarget, deltaTime: number) {
     if (!this.enabled) return
 
     // 更新目标引用（实例级别，避免不同敌人互相污染）
@@ -52,7 +58,7 @@ class HomingAbility extends AbilityBase {
     if (this.timer <= 0 && target) {
       const { bulletSpeed, bulletDamage, turnSpeed, lifetime } = this.config
 
-      const bullet = new HomingBullet(
+      const bullet = new this.config.BulletType(
         owner.x,
         owner.y,
         bulletSpeed,
@@ -90,7 +96,20 @@ class HomingAbility extends AbilityBase {
   clone (): IAbility {
     return new HomingAbility({ ...this.config })
   }
+
+  init () {
+  }
+
+  onDeath () {
+  }
+
+  constructor (config: IHomingConfig) {
+    super()
+    this.config = config
+    this.timer = Math.random() * this.config.cooldown + 2
+  }
 }
 
-export { HomingAbility }
-export type { IHomingConfig }
+export {
+  HomingAbility
+}

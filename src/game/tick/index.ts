@@ -1,6 +1,16 @@
+/**
+ * Game logic.
+ * This will be executed in every single frame.
+ */
+
 import { Stage } from '../../core/stage'
 import { spaceBackground } from '../background'
 import { GameState } from '../state'
+import { menuManager } from '../menu'
+// Import upgrade module to register upgrades
+import '../upgrade'
+// Import menu module to register menus
+import '../menu'
 import {
   initSystem,
   playerSystem,
@@ -25,6 +35,31 @@ function tick (stage: Stage, deltaTime: number) {
   // If game is over, delegate to game flow system to handle "Game Over" screen
   if (GameState.gameOver) {
     gameFlowSystem.update(stage, deltaTime)
+    return
+  }
+
+  // Check for pending level-ups - show upgrade menu
+  if (GameState.pendingLevelUps > 0 && !menuManager.isPaused) {
+    menuManager.open('upgrade-menu')
+  }
+
+  // Check for pause input
+  if (stage.input.esc && !menuManager.isPaused) {
+    menuManager.open('pause-menu')
+  }
+
+  // If menu is open, only update menu (game is paused)
+  if (menuManager.isPaused) {
+    // Still draw the game in background
+    initSystem.update(stage, deltaTime)
+    spaceBackground.draw(stage.context, stage.camera.x, stage.camera.y)
+    enemySystem.draw(stage) // Just draw, don't update
+    playerSystem.draw(stage)
+    uiSystem.update(stage, 0) // Draw UI but don't update time
+
+    // Update and draw menu on top
+    menuManager.update(stage, deltaTime)
+    menuManager.draw(stage)
     return
   }
 

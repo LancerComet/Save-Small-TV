@@ -72,6 +72,8 @@ class Sprite33 extends EnemyBase {
     this.TEXTURE_CHANGING_COUNTDOWN = 60
     this.destroyCountdown = 0
     this.attack = 25
+    this.scoreValue = 15
+    this.xpValue = 12  // 稍强的敌人
   }
 }
 

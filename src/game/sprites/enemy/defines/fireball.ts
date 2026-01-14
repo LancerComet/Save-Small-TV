@@ -76,6 +76,8 @@ class FireballEnemy extends EnemyBase {
     this.TEXTURE_CHANGING_COUNTDOWN = 8 // 快速闪烁
     this.destroyCountdown = 0
     this.attack = 30
+    this.scoreValue = 20
+    this.xpValue = 15  // 火球速度快，较高经验
   }
 }
 

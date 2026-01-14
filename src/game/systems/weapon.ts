@@ -1,3 +1,4 @@
+import { SpriteDirection } from '../../core/sprite/types'
 import { Stage } from '../../core/stage'
 import { enemyGenerator } from '../enemy-generator'
 import { EnemyBase } from '../sprites/enemy'
@@ -15,11 +16,37 @@ import { ISystem } from './types'
 import { waveSystem } from './wave'
 
 class WeaponSystem implements ISystem {
-  generateWeaponTimer = GEN_WEAPON_INTERVAL
+  // 每个玩家独立的武器生成计时器 (通过 player 对象的 weaponCountdown)
   srawFireTimer = 0 // SRAW 发射计时器
 
   resetSrawTimer () {
     this.srawFireTimer = 0
+  }
+
+  /**
+   * 根据方向获取角度（弧度）
+   */
+  getAngleFromDirection (direction: SpriteDirection): number {
+    switch (direction) {
+      case 'R': return 0
+      case 'B': return Math.PI / 2
+      case 'L': return Math.PI
+      case 'T': return -Math.PI / 2
+      default: return 0
+    }
+  }
+
+  /**
+   * 获取相反方向
+   */
+  getOppositeDirection (direction: SpriteDirection): SpriteDirection {
+    switch (direction) {
+      case 'L': return 'R'
+      case 'R': return 'L'
+      case 'T': return 'B'
+      case 'B': return 'T'
+      default: return 'L'
+    }
   }
 
   /**
@@ -73,31 +100,34 @@ class WeaponSystem implements ISystem {
   }
 
   createWeapon (deltaTime: number) {
-    // 更新通用武器生成计时器
-    if (this.generateWeaponTimer > 0) {
-      this.generateWeaponTimer -= deltaTime
-    }
-
     const players = playerSystem.allPlayers
     for (let i = 0, length = players.length; i < length; i++) {
       const player = players[i]
       if (!player) { continue }
+
+      // 更新玩家的武器冷却计时器
+      if (player.weaponCountdown > 0) {
+        player.weaponCountdown -= deltaTime
+      }
 
       // SRAW 自动发射（不需要按攻击键，使用独立计时器）
       if (player.currentWeaponType === WeaponType.SRAW) {
         this.srawFireTimer -= deltaTime
         if (this.srawFireTimer <= 0) {
           this.createSRAWMissiles(player)
-          this.srawFireTimer = SRAW_FIRE_INTERVAL
+          this.srawFireTimer = player.getEffectiveFireRate(SRAW_FIRE_INTERVAL)
         }
         continue // SRAW 不需要其他武器逻辑
       }
 
-      // 其他武器需要等待通用计时器
-      if (this.generateWeaponTimer > 0) { continue }
+      // 其他武器需要等待冷却
+      if (player.weaponCountdown > 0) { continue }
 
       // 其他武器需要玩家按攻击键
       if (!player.attacking) { continue }
+
+      // 计算有效射速间隔
+      const effectiveInterval = player.getEffectiveFireRate(GEN_WEAPON_INTERVAL)
 
       // Handle different weapon types
       if (player.currentWeaponType === WeaponType.SHOTGUN) {
@@ -107,7 +137,31 @@ class WeaponSystem implements ISystem {
           x: player.x,
           y: player.y
         }, player.useAnalogShooting ? player.shootAngle : undefined)
+
+        // 应用伤害加成
+        for (const pellet of pellets) {
+          pellet.attack = player.getEffectiveDamage(pellet.attack)
+        }
+
         player.weapons.push(...pellets)
+
+        // 后射散弹
+        if (player.hasRearShot) {
+          const rearPellets = ShotgunPellet.createPellets({
+            direction: this.getOppositeDirection(player.weaponDirection),
+            x: player.x,
+            y: player.y
+          }, player.useAnalogShooting && player.shootAngle !== null
+            ? player.shootAngle + Math.PI  // 反向角度
+            : undefined)
+
+          // 应用伤害加成（后射减少50%伤害）
+          for (const pellet of rearPellets) {
+            pellet.attack = player.getEffectiveDamage(pellet.attack) * 0.5
+          }
+
+          player.weapons.push(...rearPellets)
+        }
       } else if (player.currentWeaponType === WeaponType.LASER) {
         // Laser weapon
         const laser = new Laser(<IWeapon> {
@@ -121,28 +175,89 @@ class WeaponSystem implements ISystem {
           laser.setAngle(player.shootAngle)
         }
 
+        // 应用伤害加成
+        laser.attack = player.getEffectiveDamage(laser.attack)
+
         player.weapons.push(laser)
+
+        // 后射激光
+        if (player.hasRearShot) {
+          const rearLaser = new Laser(<IWeapon> {
+            direction: this.getOppositeDirection(player.weaponDirection),
+            x: player.x,
+            y: player.y
+          })
+
+          // 如果是无极方向射击，设置反向角度
+          if (player.useAnalogShooting && player.shootAngle !== null) {
+            rearLaser.setAngle(player.shootAngle + Math.PI)
+          }
+
+          // 应用伤害加成（后射减少50%伤害）
+          rearLaser.attack = player.getEffectiveDamage(rearLaser.attack) * 0.5
+
+          player.weapons.push(rearLaser)
+        }
       } else {
         // Normal or Power bullet
         const CurrentWeapon = player.currentWeaponClass
-        const weapon: WeaponBase = new CurrentWeapon(<IWeapon> {
-          direction: player.weaponDirection,
-          x: player.x,
-          y: player.y
-        })
 
-        // 如果是无极方向射击，设置角度
-        if (player.useAnalogShooting && player.shootAngle !== null) {
-          weapon.setAngle(player.shootAngle)
+        // 计算需要创建多少发子弹
+        let bulletCount = 1
+        if (player.hasTripleShot) {
+          bulletCount = 3
+        } else if (player.hasDoubleShot) {
+          bulletCount = 2
         }
 
-        player.weapons.push(weapon)
-      }
-    }
+        // 创建主要子弹
+        for (let b = 0; b < bulletCount; b++) {
+          const weapon: WeaponBase = new CurrentWeapon(<IWeapon> {
+            direction: player.weaponDirection,
+            x: player.x,
+            y: player.y
+          })
 
-    // 只有在计时器归零时才重置（表示本帧创建了武器）
-    if (this.generateWeaponTimer <= 0) {
-      this.generateWeaponTimer = GEN_WEAPON_INTERVAL
+          // 计算子弹散布角度
+          let angleOffset = 0
+          if (bulletCount === 2) {
+            angleOffset = (b === 0 ? -0.15 : 0.15) // ±0.15 弧度 ≈ ±8.6度
+          } else if (bulletCount === 3) {
+            angleOffset = (b - 1) * 0.15 // -0.15, 0, 0.15
+          }
+
+          // 如果是无极方向射击，设置角度
+          if (player.useAnalogShooting && player.shootAngle !== null) {
+            weapon.setAngle(player.shootAngle + angleOffset)
+          } else if (angleOffset !== 0) {
+            // 根据方向计算基础角度
+            const baseAngle = this.getAngleFromDirection(player.weaponDirection)
+            weapon.setAngle(baseAngle + angleOffset)
+          }
+
+          // 应用伤害加成
+          weapon.attack = player.getEffectiveDamage(weapon.attack)
+
+          player.weapons.push(weapon)
+        }
+
+        // 后射子弹
+        if (player.hasRearShot) {
+          const rearWeapon: WeaponBase = new CurrentWeapon(<IWeapon> {
+            direction: this.getOppositeDirection(player.weaponDirection),
+            x: player.x,
+            y: player.y
+          })
+
+          // 应用伤害加成（后射减少50%伤害）
+          rearWeapon.attack = player.getEffectiveDamage(rearWeapon.attack) * 0.5
+
+          player.weapons.push(rearWeapon)
+        }
+      }
+
+      // 重置该玩家的武器冷却
+      player.weaponCountdown = effectiveInterval
     }
   }
 
@@ -197,18 +312,19 @@ class WeaponSystem implements ISystem {
         // If weapon hits some enemy.
         let weaponDestroyed = false
 
-        // 检查是否为激光武器（可穿透）
+        // 检查是否为激光武器（可穿透）或玩家有穿透能力
         const isLaser = weapon instanceof Laser
+        const canPierce = isLaser || player.hasPiercing
 
         // 先检测波次敌人
         const waveHit = waveSystem.checkWeaponHit(weapon, isLaser)
-        if (waveHit && !isLaser) {
+        if (waveHit && !canPierce) {
           weapons.splice(j, 1)
           weaponDestroyed = true
         }
 
         // 再检测普通敌人
-        if (!weaponDestroyed || isLaser) {
+        if (!weaponDestroyed || canPierce) {
           const enemies = enemySystem.enemies
           for (let k = 0, enemyLength = enemies.length; k < enemyLength; k++) {
             const enemy = enemies[k]
@@ -219,6 +335,11 @@ class WeaponSystem implements ISystem {
               if (laser.canHitEnemy(enemy) && enemySystem.checkWeaponHitEnemy(weapon, enemy)) {
                 laser.recordHit(enemy)
                 // 激光不会被销毁，继续检测其他敌人
+              }
+            } else if (canPierce) {
+              // 穿透武器：命中但不销毁
+              if (enemySystem.checkWeaponHitEnemy(weapon, enemy)) {
+                // 穿透后继续，不销毁武器
               }
             } else {
               // 普通武器
@@ -263,7 +384,6 @@ class WeaponSystem implements ISystem {
   }
 
   reset () {
-    this.generateWeaponTimer = GEN_WEAPON_INTERVAL
     this.srawFireTimer = 0
   }
 }

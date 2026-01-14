@@ -82,6 +82,11 @@ class EnemyBase extends Sprite {
   scoreValue: number = 10
 
   /**
+   * 击杀获得的经验值 (Roguelike progression)
+   */
+  xpValue: number = 10
+
+  /**
    * 击杀时掉落道具的数量
    */
   dropCount: number = 0

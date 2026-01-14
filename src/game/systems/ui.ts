@@ -104,9 +104,10 @@ class UISystem implements ISystem {
     // 固定总高度
     const totalHeight = iconSize + gap + smallFontSize
 
-    // 整体位置（左下角）
+    // 整体位置（左下角，在XP条上方）
+    const xpBarHeight = 3 + 4 + 2 // XP条高度 + 底部间距 + 额外间距
     const baseX = 4
-    const baseY = stageHeight - totalHeight - 4
+    const baseY = stageHeight - totalHeight - xpBarHeight - 4
 
     // 图标位置
     const iconX = baseX
@@ -174,6 +175,42 @@ class UISystem implements ISystem {
         ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight)
       }
     }
+  }
+
+  /**
+   * 绘制经验条和等级
+   */
+  printXPBar (stage: Stage) {
+    const ctx = stage.context
+    const [stageWidth] = stage.logicalSize
+
+    // XP条尺寸 - 在屏幕底部
+    const barWidth = stageWidth - 8
+    const barHeight = 3
+    const barX = 4
+    const barY = stage.logicalSize[1] - barHeight - 4
+
+    // 计算经验百分比
+    const xpPercent = GameState.levelProgress
+
+    // 背景（深蓝色）
+    ctx.fillStyle = '#1a1a2e'
+    ctx.fillRect(barX, barY, barWidth, barHeight)
+
+    // 经验条（金黄色）
+    ctx.fillStyle = '#f1c40f'
+    ctx.fillRect(barX, barY, barWidth * xpPercent, barHeight)
+
+    // 边框
+    ctx.strokeStyle = '#6dc2ca'
+    ctx.lineWidth = 0.5
+    ctx.strokeRect(barX, barY, barWidth, barHeight)
+
+    // 等级显示（在XP条上方右侧）
+    const levelText = `Lv.${GameState.playerLevel}`
+    const fontSize = 5
+    const textWidth = stage.measureText(levelText, fontSize)
+    stage.printText(levelText, stageWidth - textWidth - 4, barY - 2, fontSize)
   }
 
   printBuffIndicators (stage: Stage) {
@@ -246,6 +283,7 @@ class UISystem implements ISystem {
     this.printTimer(stage)
     this.printScore(stage)
     this.printHPBar(stage)
+    this.printXPBar(stage)
     this.printBuffIndicators(stage)
     this.printWeaponInfo(stage)
   }

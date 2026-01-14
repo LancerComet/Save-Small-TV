@@ -71,6 +71,8 @@ class Sprite22 extends EnemyBase {
     this.TEXTURE_CHANGING_COUNTDOWN = 60
     this.destroyCountdown = 0
     this.attack = 15
+    this.scoreValue = 10
+    this.xpValue = 8  // 普通敌人，较低经验
   }
 }
 

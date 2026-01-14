@@ -1,5 +1,6 @@
 import { Stage } from '../../core/stage'
 import { SmallTV } from '../sprites/player'
+import { GameState } from '../state'
 import { ISystem } from './types'
 
 class PlayerSystem implements ISystem {
@@ -144,10 +145,39 @@ class PlayerSystem implements ISystem {
     )
   }
 
+  /**
+   * 处理生命回复
+   */
+  tickHpRegen (deltaTime: number) {
+    const player = this.instance
+    if (!player || player.isDead) return
+
+    if (player.hpRegen > 0) {
+      // 每秒恢复 hpRegen 点 HP
+      player.hp = Math.min(player.maxHp, player.hp + player.hpRegen * deltaTime)
+    }
+  }
+
+  /**
+   * 检查升级护盾效果
+   */
+  checkLevelUpShield () {
+    const player = this.instance
+    if (!player || player.isDead) return
+
+    // 如果玩家有升级护盾能力，并且触发了升级
+    if (player.hasShieldOnLevel && GameState.pendingLevelUpShields > 0) {
+      player.shieldHits += GameState.pendingLevelUpShields
+      GameState.pendingLevelUpShields = 0
+    }
+  }
+
   update (stage: Stage, deltaTime: number) {
     this.keyControl(stage)
     this.move(deltaTime)
     this.positionLimit()
+    this.tickHpRegen(deltaTime) // 处理生命回复
+    this.checkLevelUpShield() // 检查升级护盾
     this.updateCamera(stage) // 摄像机跟随玩家
     this.draw(stage)
   }

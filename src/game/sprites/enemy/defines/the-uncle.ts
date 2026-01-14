@@ -311,6 +311,7 @@ class TheUncle extends EnemyBase {
     // 精英敌人属性
     this.isElite = true // 不会因出界被删除
     this.scoreValue = 100 // 击杀得分
+    this.xpValue = 100  // Boss级敌人，大量经验
     this.dropCount = 2 // 掉落2个道具
 
     // 设置行为 - 缓慢追踪玩家

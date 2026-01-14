@@ -151,10 +151,14 @@ class EnemySystem implements ISystem {
           enemy.hasDroppedItem = true
         }
 
-        // 增加分数
-        GameState.score += 10
+        // 增加分数 (使用敌人自身的分数值)
+        GameState.score += enemy.scoreValue
 
-        // 检查是否升级
+        // 增加经验值 (使用敌人自身的经验值 * 玩家经验倍率)
+        const xpGain = enemy.xpValue * (playerSystem.instance?.xpMultiplier || 1)
+        GameState.addXP(xpGain)
+
+        // 检查是否升级 (difficulty level, not player level)
         const newLevel = Math.floor(GameState.score / SCORE_PER_LEVEL) + 1
         if (newLevel > GameState.level) {
           GameState.level = newLevel
@@ -179,7 +183,7 @@ class EnemySystem implements ISystem {
   /**
    * Draw single enemy.
    */
-  draw (stage: Stage, enemy: EnemyBase) {
+  private drawSingle (stage: Stage, enemy: EnemyBase) {
     enemy.updateTexture() // Update texture animation
     const [screenX, screenY] = stage.camera.toScreen(enemy.x, enemy.y)
     stage.context.drawImage(
@@ -187,6 +191,17 @@ class EnemySystem implements ISystem {
       screenX,
       screenY
     )
+  }
+
+  /**
+   * Draw all enemies without updating logic.
+   * Used when game is paused to show frozen state.
+   */
+  draw (stage: Stage) {
+    for (const enemy of this.enemies) {
+      if (!enemy) continue
+      this.drawSingle(stage, enemy)
+    }
   }
 
   update (stage: Stage, deltaTime: number) {
@@ -197,7 +212,7 @@ class EnemySystem implements ISystem {
       if (!enemy) { continue }
       this.detectPlayer(enemy)
       this.autoMove(enemy, deltaTime)
-      this.draw(stage, enemy)
+      this.drawSingle(stage, enemy)
     }
   }
 
@@ -209,10 +224,18 @@ class EnemySystem implements ISystem {
     if (!enemy || enemy.isDead) return false
 
     if (checkSpriteCollision(weapon, enemy)) {
-      enemy.hp -= weapon.attack
+      const damage = weapon.attack
+      enemy.hp -= damage
 
       // 被打中时出血效果
       effectSystem.spawnBlood(weapon.x, weapon.y, 6)
+
+      // 吸血效果：恢复造成伤害的 5%
+      const player = playerSystem.instance
+      if (player && player.hasLifesteal) {
+        const healAmount = damage * 0.05
+        player.hp = Math.min(player.maxHp, player.hp + healAmount)
+      }
 
       if (enemy.isDead) {
         // 触发死亡能力 - 投射物会自动收集到 Enemy.deathProjectiles
@@ -226,12 +249,40 @@ class EnemySystem implements ISystem {
           enemy.y + enemy.height / 2,
           20
         )
+        enemy.hasSpawnedBlood = true
+
+        // 击杀爆炸效果：对周围敌人造成伤害
+        if (player && player.hasExplosionOnKill) {
+          this.triggerExplosionDamage(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 50, damage * 0.3)
+        }
       }
 
       return true
     }
 
     return false
+  }
+
+  /**
+   * 击杀爆炸效果：对范围内敌人造成伤害
+   */
+  triggerExplosionDamage (x: number, y: number, radius: number, damage: number) {
+    // 爆炸效果
+    effectSystem.spawnExplosion(x, y, radius)
+
+    // 对范围内敌人造成伤害
+    for (const enemy of this.enemies) {
+      if (!enemy || enemy.isDead) continue
+
+      const enemyCenterX = enemy.x + enemy.width / 2
+      const enemyCenterY = enemy.y + enemy.height / 2
+      const distance = Math.hypot(enemyCenterX - x, enemyCenterY - y)
+
+      if (distance <= radius) {
+        enemy.hp -= damage
+        effectSystem.spawnBlood(enemyCenterX, enemyCenterY, 4)
+      }
+    }
   }
 
   reset () {

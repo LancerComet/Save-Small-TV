@@ -42,12 +42,15 @@ class SpecialItemSystem implements ISystem {
       const player = players[i]
       if (!player || player.isDead) { continue }
 
-      const pStartX = player.x
-      const pStartY = player.y
-      const pEndX = player.x + player.width
-      const pEndY = player.y + player.height
+      // 磁铁范围扩大拾取区域
+      const magnetRange = player.magnetRange || 0
 
-      // Simple collision detection
+      const pStartX = player.x - magnetRange
+      const pStartY = player.y - magnetRange
+      const pEndX = player.x + player.width + magnetRange
+      const pEndY = player.y + player.height + magnetRange
+
+      // 矩形碰撞检测
       if (
         ((pStartX >= startX && pStartX <= endX) || (pEndX >= startX && pEndX <= endX) || (startX >= pStartX && startX <= pEndX)) &&
         ((pStartY >= startY && pStartY <= endY) || (pEndY >= startY && pEndY <= endY) || (startY >= pStartY && startY <= pEndY))

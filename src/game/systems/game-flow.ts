@@ -2,6 +2,7 @@ import { Stage } from '../../core/stage'
 import { spaceBackground } from '../background'
 import { DEFAULT_LEVEL, DEFAULT_SCORE } from '../config'
 import { GameState } from '../state'
+import { upgradePool } from '../upgrade'
 import { effectSystem } from './effect'
 import { enemySystem } from './enemy'
 import { enemyProjectileSystem } from './enemy-projectile'
@@ -30,6 +31,7 @@ class GameFlowSystem implements ISystem {
 
   restartGame (stage: Stage) {
     GameState.reset()
+    upgradePool.reset()  // Reset upgrade progress
     enemySystem.reset()
     waveSystem.reset()
     weaponSystem.reset()

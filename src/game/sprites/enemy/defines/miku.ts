@@ -376,6 +376,7 @@ class MikuEnemy extends EnemyBase {
     this.TEXTURE_CHANGING_COUNTDOWN = 30 // 眨眼频率
     this.attack = 15
     this.scoreValue = 30
+    this.xpValue = 25  // 有回旋镖能力，较高经验
 
     // 添加葱回旋镖能力.
     this.addAbility(new BoomerangAbility({

@@ -6,6 +6,7 @@ import { WeaponBase } from '../sprites/weapon/weapon-base.ts'
 import { GameState } from '../state'
 import { checkSpriteCollision } from '../utils/collision'
 import { effectSystem } from './effect'
+import { enemySystem } from './enemy'
 import { playerSystem } from './player'
 import { specialItemSystem } from './special-item'
 import { ISystem } from './types'
@@ -52,10 +53,18 @@ class WaveSystem implements ISystem {
           (weapon as Laser).recordHit(enemy)
         }
 
-        enemy.hp -= weapon.attack
+        const damage = weapon.attack
+        enemy.hp -= damage
 
         // 出血效果
         effectSystem.spawnBlood(weapon.x, weapon.y, 6)
+
+        // 吸血效果：恢复造成伤害的 5%
+        const player = playerSystem.instance
+        if (player && player.hasLifesteal) {
+          const healAmount = damage * 0.05
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+        }
 
         if (enemy.isDead) {
           // 触发死亡能力（如爆炸碎片）- 投射物会自动收集到 Enemy.deathProjectiles
@@ -70,8 +79,22 @@ class WaveSystem implements ISystem {
             enemy.isElite ? 50 : 12
           )
 
+          // 击杀爆炸效果：对周围敌人造成伤害
+          if (player && player.hasExplosionOnKill) {
+            enemySystem.triggerExplosionDamage(
+              enemy.x + enemy.width / 2,
+              enemy.y + enemy.height / 2,
+              50,
+              damage * 0.3
+            )
+          }
+
           // 使用敌人自身的属性决定分数和掉落
           GameState.score += enemy.scoreValue
+
+          // 增加经验值 (使用敌人自身的经验值 * 玩家经验倍率)
+          const xpGain = enemy.xpValue * (playerSystem.instance?.xpMultiplier || 1)
+          GameState.addXP(xpGain)
 
           // 根据敌人的 dropCount 掉落道具
           for (let d = 0; d < enemy.dropCount; d++) {

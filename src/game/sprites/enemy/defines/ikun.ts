@@ -259,6 +259,7 @@ class IkunEnemy extends EnemyBase {
     this.TEXTURE_CHANGING_COUNTDOWN = 15
     this.attack = 18
     this.scoreValue = 25
+    this.xpValue = 20  // 会投篮球，中等经验
 
     this.shakeTime = Math.random() * Math.PI * 2
 
